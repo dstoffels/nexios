@@ -1,0 +1,28 @@
+{
+	"name": "nexios",
+	"version": "1.0.0",
+	"description": "An axios clone that wraps fetch for use with next.js.",
+	"main": "index.js",
+	"scripts": {
+		"build": "tsc",
+		"start": "node dist/index.js",
+		"test": "echo \"Error: no test specified\" && exit 1"
+	},
+	"repository": {
+		"type": "git",
+		"url": "github.com/dstoffels/nexios"
+	},
+	"keywords": [
+		"axios",
+		"next",
+		"next.js",
+		"fetch"
+	],
+	"author": "Dan Stoffels",
+	"license": "MIT",
+	"devDependencies": {
+		"@types/node": "^20.14.10",
+		"ts-node": "^10.9.2",
+		"typescript": "^5.5.3"
+	}
+}
