@@ -1,3 +1,12 @@
+import Nexios from '.';
+
+export interface NexiosConfig {
+	baseUrl?: string;
+	defaultTimeout?: number;
+	defaultHeaders?: NexiosRequestHeaders;
+	defaultErrorHandling?: boolean;
+}
+
 export interface NexiosRequestConfig {
 	body?: any;
 	method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
@@ -6,24 +15,11 @@ export interface NexiosRequestConfig {
 	timeout?: number;
 }
 
-export interface NexiosResponse<T> {
-	data: T;
-	status: number;
-	statusText: string;
-	headers: NexiosResponseHeaders;
-}
-
 export interface NexiosRequest<T> {
 	url: string;
 	data?: T;
 	config?: NexiosRequestConfig;
 	headers?: NexiosRequestHeaders;
-}
-
-export interface NexiosConfig {
-	baseUrl?: string;
-	defaultTimeout?: number;
-	defaultHeaders?: NexiosRequestHeaders;
 }
 
 export interface NexiosRequestHeaders {
@@ -56,40 +52,40 @@ export interface NexiosRequestHeaders {
 	'User-Agent'?: string;
 }
 
-export interface NexiosResponseHeaders extends Headers {
-	[key: string]: any;
-	Server?: string;
-	Date?: Date;
-	'Content-Type'?: string;
-	'Content-Length'?: number;
-	Connection?: string;
-	'Keep-Alive'?: string;
-	Cookie?: string;
-}
-
 export class NexiosResponse<T = unknown> extends Response {
-	data: T;
-	headers: NexiosResponseHeaders;
+	data: T = {} as T;
 
 	constructor(response: Response) {
 		super();
 		Object.assign(this, response);
-		this.headers = this.parseHeaders(response.headers);
-		this.data = {} as T;
-		this.init(response);
 	}
 
-	private async init(response: Response): Promise<void> {
-		this.data = await this.parseData(response);
+	async init() {
+		if (this.ok) this.data = await this.json();
+		return this;
+	}
+}
+
+// EXCEPTIONS
+export class NexiosResponseError extends Error {
+	response: Response;
+	status: number;
+	statusMsg: string;
+	data: any;
+	name: string;
+	message: string = '';
+
+	constructor(response: Response) {
+		super();
+		this.name = 'NexiosError';
+		this.response = response;
+		this.status = response.status;
+		this.statusMsg = `${this.status} ${Nexios.statusCodes[this.status]}`;
 	}
 
-	private parseData(response: Response): Promise<T> {
-		return response.json();
-	}
-
-	private parseHeaders(headers: Headers): NexiosResponseHeaders {
-		const result: NexiosResponseHeaders = headers;
-		headers.forEach((value, key) => (result[key] = value));
-		return result;
+	async init() {
+		this.data = await this.response.json();
+		this.message = `${this.statusMsg}: ${this.data.message || this.data.error || this.data}`;
+		return this;
 	}
 }
