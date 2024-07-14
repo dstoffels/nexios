@@ -1,5 +1,5 @@
 {
-	"name": "nexios",
+	"name": "nextios",
 	"version": "1.0.0",
 	"description": "An axios clone that wraps fetch for use with next.js.",
 	"main": "index.js",
