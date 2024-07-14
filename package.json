@@ -1,8 +1,8 @@
 {
 	"name": "nextios",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"description": "An axios clone that wraps fetch for use with next.js.",
-	"main": "index.js",
+	"main": "dist/index.js",
 	"scripts": {
 		"build": "tsc",
 		"start": "node dist/index.js",
@@ -24,5 +24,9 @@
 		"@types/node": "^20.14.10",
 		"ts-node": "^10.9.2",
 		"typescript": "^5.5.3"
-	}
+	},
+	"files": [
+		"dist/**/*",
+		"index.d.ts"
+	]
 }
