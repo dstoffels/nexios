@@ -1,6 +1,6 @@
 {
-	"name": "nextios",
-	"version": "1.0.2",
+	"name": "nexios",
+	"version": "0.1.2",
 	"description": "An axios clone that wraps fetch for use with next.js.",
 	"main": "dist/index.js",
 	"scripts": {
@@ -23,7 +23,11 @@
 	"devDependencies": {
 		"@types/node": "^20.14.10",
 		"ts-node": "^10.9.2",
-		"typescript": "^5.5.3"
+		"typescript": "^5.5.3",
+		"@types/jest": "^29.5.14",
+		"jest": "^29.7.0",
+		"jest-fetch-mock": "^3.0.3",
+		"ts-jest": "^29.2.5"
 	},
 	"files": [
 		"dist/**/*",

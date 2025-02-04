@@ -9,7 +9,7 @@ export interface NexiosConfig {
 
 export interface NexiosRequestConfig {
 	body?: any;
-	method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+	method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | string;
 	headers?: NexiosRequestHeaders;
 	params?: Record<string, string | number>;
 	timeout?: number;
@@ -58,6 +58,7 @@ export class NexiosResponse<T = unknown> extends Response {
 	constructor(response: Response) {
 		super();
 		Object.assign(this, response);
+		this.init();
 	}
 
 	async init() {

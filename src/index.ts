@@ -1,6 +1,10 @@
 import { NexiosConfig, NexiosRequestConfig, NexiosResponse, NexiosResponseError } from './types';
 
+/**
+ * Nexios is a fetch wrapper that mimics the behavior of axios for server side use with Next.js.
+ */
 class Nexios {
+	// Default request configuration, can be optionally overriding in constructor
 	private config: NexiosConfig = {
 		baseUrl: '',
 		defaultHeaders: {
@@ -9,8 +13,41 @@ class Nexios {
 		defaultErrorHandling: true,
 	};
 
-	constructor(config?: NexiosConfig) {
-		this.config = { ...this.config, ...config };
+	/**
+	 *
+	 * @param defaultConfig
+	 */
+	constructor(defaultConfig?: NexiosConfig) {
+		this.config = { ...this.config, ...defaultConfig };
+	}
+
+	async request<T = unknown>(
+		url: string,
+		options: NexiosRequestConfig = {},
+	): Promise<NexiosResponse<T>> {
+		const urlObj = new URL(`${this.baseUrl}${url}`);
+		if (options.params)
+			Object.entries(options.params).forEach(([k, v]) =>
+				urlObj.searchParams.append(k, v.toString()),
+			);
+
+		url = urlObj.toString();
+
+		const response = await fetch(url, {
+			...options,
+			headers: {
+				...this.config.defaultHeaders,
+				...(options.headers || {}),
+			},
+		});
+
+		if (!response.ok) {
+			const error = await new NexiosResponseError(response).init();
+			console.error(error.message);
+			throw error;
+		}
+
+		return await new NexiosResponse<T>(response).init();
 	}
 
 	async get<T = unknown>(
@@ -25,7 +62,7 @@ class Nexios {
 		data: object,
 		config: NexiosRequestConfig = {},
 	): Promise<NexiosResponse<T>> {
-		return this.request(url, { method: 'POST', body: JSON.stringify(data), ...config });
+		return this.request<T>(url, { method: 'POST', body: JSON.stringify(data), ...config });
 	}
 
 	async put<T = unknown>(
@@ -33,7 +70,7 @@ class Nexios {
 		data: object,
 		config: NexiosRequestConfig = {},
 	): Promise<NexiosResponse<T>> {
-		return this.request(url, { method: 'PUT', body: JSON.stringify(data), ...config });
+		return this.request<T>(url, { method: 'PUT', body: JSON.stringify(data), ...config });
 	}
 
 	async patch<T = unknown>(
@@ -41,38 +78,14 @@ class Nexios {
 		data: object,
 		config: NexiosRequestConfig = {},
 	): Promise<NexiosResponse<T>> {
-		return this.request(url, { method: 'PATCH', body: JSON.stringify(data), ...config });
+		return this.request<T>(url, { method: 'PATCH', body: JSON.stringify(data), ...config });
 	}
 
 	async delete<T = unknown>(
 		url: string,
 		config: NexiosRequestConfig = {},
 	): Promise<NexiosResponse<T>> {
-		return this.request(url, { method: 'DELETE', ...config });
-	}
-
-	async request<T = unknown>(
-		url: string,
-		options: NexiosRequestConfig = {},
-	): Promise<NexiosResponse<T>> {
-		url = `${this.baseUrl}${url}`;
-
-		const response = await fetch(url, {
-			...options,
-			headers: {
-				...this.config.defaultHeaders,
-				...(options.headers || {}),
-			},
-		});
-
-		if (!response.ok) {
-			// throw new Error('ope');
-			const error = await new NexiosResponseError(response).init();
-			console.error(error.message);
-			throw error;
-		}
-
-		return await new NexiosResponse<T>(response).init();
+		return this.request<T>(url, { method: 'DELETE', ...config });
 	}
 
 	public get baseUrl() {
