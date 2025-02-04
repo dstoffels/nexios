@@ -48,7 +48,8 @@ export interface NexiosRequestHeaders {
 		| 'video/x-msvideo'
 		| 'multipart/form-data'
 		| 'multipart/alternative'
-		| 'multipart/mixed';
+		| 'multipart/mixed'
+		| string;
 	'User-Agent'?: string;
 }
 
@@ -61,7 +62,7 @@ export class NexiosResponse<T = unknown> extends Response {
 		this.init();
 	}
 
-	async init() {
+	private async init() {
 		if (this.ok) this.data = await this.json();
 		return this;
 	}
@@ -82,9 +83,10 @@ export class NexiosResponseError extends Error {
 		this.response = response;
 		this.status = response.status;
 		this.statusMsg = `${this.status} ${Nexios.statusCodes[this.status]}`;
+		this.init();
 	}
 
-	async init() {
+	private async init() {
 		this.data = await this.response.json();
 		this.message = `${this.statusMsg}: ${this.data.message || this.data.error || this.data}`;
 		return this;

@@ -1,12 +1,14 @@
 {
 	"name": "nexios",
-	"version": "0.1.2",
+	"version": "0.1.1",
 	"description": "An axios clone that wraps fetch for use with next.js.",
 	"main": "dist/index.js",
 	"scripts": {
 		"build": "tsc",
 		"start": "node dist/index.js",
-		"test": "npx ts-node src/test.ts"
+		"test": "jest",
+		"test:watch": "jest --watch",
+		"test:coverage": "jest --coverage"
 	},
 	"repository": {
 		"type": "git",
