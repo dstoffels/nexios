@@ -24,7 +24,7 @@ jobs:
         id: current-version
         run: |
           git fetch origin main
-          git checkout origin/main:package.json > package-main.json
+          git show origin/main:package.json > package-main.json
           echo "current_version=$(node -p "require('./package-main.json').version")" >> $GITHUB_ENV
       
       - name: Compare versions
