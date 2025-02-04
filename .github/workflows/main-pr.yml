@@ -29,7 +29,7 @@ jobs:
       
       - name: Compare versions
         run: |
-          if [ "$PR_VERSION" == $"CURRENT_VERSION" ]; then
+          if [ "$PR_VERSION" == "$CURRENT_VERSION" ]; then
             echo "❌ ERROR: PR version matches current version, bump version before attempting PR."
             exit 1
           fi
