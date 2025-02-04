@@ -42,12 +42,12 @@ class Nexios {
 		});
 
 		if (!response.ok) {
-			const error = await new NexiosResponseError(response).init();
+			const error = await new NexiosResponseError(response);
 			console.error(error.message);
 			throw error;
 		}
 
-		return await new NexiosResponse<T>(response).init();
+		return await new NexiosResponse<T>(response);
 	}
 
 	async get<T = unknown>(
