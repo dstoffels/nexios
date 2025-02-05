@@ -1,5 +1,3 @@
-import Nexios from '.';
-
 export type CacheOptions =
 	| 'default'
 	| 'no-store'
@@ -16,23 +14,18 @@ export interface NexiosConfig {
 	credentials?: CredentialsOptions;
 	timeout?: number;
 	cache?: CacheOptions;
+	getErrorMsg?: (error: NexiosError) => string;
 }
 
 export interface NexiosOptions {
 	body?: any;
 	method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | (string & {});
-	headers?: NexiosHeaders;
 	params?: Record<string, string | number>;
+	headers?: NexiosHeaders;
+	credentials?: CredentialsOptions;
 	cache?: CacheOptions;
 	timeout?: number;
 }
-
-// export interface NexiosRequest<T> {
-// 	url: string;
-// 	data?: T;
-// 	options?: NexiosOptions;
-// 	headers?: NexiosHeaders;
-// }
 
 export type ContentTypes =
 	| 'text/plain'
@@ -68,17 +61,29 @@ export interface NexiosHeaders {
 }
 
 export class NexiosResponse<T = unknown> extends Response {
-	data: T = null as T;
+	data: T | string | Blob | null = null;
+	response: Response;
 
 	constructor(response: Response) {
 		super();
+		this.response = response;
 		Object.assign(this, response);
-		this.init();
 	}
 
-	private async init() {
-		if (this.ok && this.body) this.data = await this.json();
-		return this;
+	async tryResolveStream() {
+		const contentType = this.headers.get('content-type') || '';
+		try {
+			if (contentType.includes('application/json')) {
+				this.data = await this.response.json();
+			} else if (contentType.includes('text')) {
+				this.data = await this.response.text();
+			} else {
+				this.data = await this.response.blob();
+			}
+		} catch {
+			this.data = null;
+			return false;
+		}
 	}
 
 	static statusCodes: { [key: number]: string } = {
@@ -127,27 +132,17 @@ export class NexiosResponse<T = unknown> extends Response {
 	};
 }
 
-// EXCEPTIONS
 export class NexiosError extends Error {
-	response: Response;
+	response: NexiosResponse;
 	status: number;
 	statusMsg: string;
 	data: any;
-	name: string;
-	message: string = '';
 
-	constructor(response: Response) {
+	constructor(response: NexiosResponse) {
 		super();
-		this.name = 'NexiosError';
 		this.response = response;
 		this.status = response.status;
 		this.statusMsg = `${this.status} ${NexiosResponse.statusCodes[this.status]}`;
-		this.init();
-	}
-
-	private async init() {
-		this.data = await this.response.json();
-		this.message = `${this.statusMsg}: ${this.data.message || this.data.error || this.data}`;
-		return this;
+		this.data = response.data;
 	}
 }

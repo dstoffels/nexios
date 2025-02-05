@@ -34,43 +34,40 @@ class Nexios {
 
 	constructor(config: NexiosConfig = defaultConfig) {
 		this.baseURL = config.baseURL || defaultConfig.baseURL;
-		this.headers = config.headers || defaultConfig.headers;
+		this.headers = { ...defaultHeaders, ...config.headers };
 		this.credentials = config.credentials || defaultConfig.credentials;
 		this.cache = config.cache || defaultConfig.cache;
 		this.timeout = config.timeout || defaultConfig.timeout;
+		this.getErrorMsg = config.getErrorMsg || this.getErrorMsg;
 	}
 
-	setAuthHeader(token: string, isBearer: boolean = true) {
-		this.headers = { ...this.headers, Authorization: isBearer ? `Bearer ${token}` : token };
-	}
-
-	setCacheOption(option: CacheOptions) {
-		this.cache = option;
-	}
-
-	async request<T = unknown>(
-		url: string,
-		options: NexiosOptions = { method: 'GET' },
-	): Promise<NexiosResponse<T>> {
+	async request<T = unknown>(url: string, options: NexiosOptions = {}): Promise<NexiosResponse<T>> {
 		const urlObj = new URL(`${this.baseURL}${url}`);
 		if (options.params)
 			Object.entries(options.params).forEach(([k, v]) =>
 				urlObj.searchParams.append(k, v.toString()),
 			);
 
-		const response = await fetch(urlObj.toString(), {
+		const rawResponse = await fetch(urlObj.toString(), {
 			...options,
 			headers: {
 				...this.headers,
 				...(options.headers || {}),
 			},
-			cache: this.cache,
-			credentials: this.credentials,
+			cache: options.cache || this.cache,
+			credentials: options.credentials || this.credentials,
 		});
 
-		if (!response.ok) throw new NexiosError(response);
+		const response = new NexiosResponse(rawResponse);
+		await response.tryResolveStream();
 
-		return new NexiosResponse<T>(response);
+		if (!response.ok) {
+			const error = new NexiosError(response);
+			error.message = this.getErrorMsg(error);
+			throw error;
+		}
+
+		return new NexiosResponse<T>(rawResponse);
 	}
 
 	async get<T = unknown>(url: string, config: NexiosOptions = {}): Promise<NexiosResponse<T>> {
@@ -79,7 +76,7 @@ class Nexios {
 
 	async post<T = unknown>(
 		url: string,
-		data: object,
+		data: object = {},
 		config: NexiosOptions = {},
 	): Promise<NexiosResponse<T>> {
 		return this.request<T>(url, { ...config, method: 'POST', body: JSON.stringify(data) });
@@ -87,7 +84,7 @@ class Nexios {
 
 	async put<T = unknown>(
 		url: string,
-		data: object,
+		data: object = {},
 		config: NexiosOptions = {},
 	): Promise<NexiosResponse<T>> {
 		return this.request<T>(url, { ...config, method: 'PUT', body: JSON.stringify(data) });
@@ -95,7 +92,7 @@ class Nexios {
 
 	async patch<T = unknown>(
 		url: string,
-		data: object,
+		data: object = {},
 		config: NexiosOptions = {},
 	): Promise<NexiosResponse<T>> {
 		return this.request<T>(url, { ...config, method: 'PATCH', body: JSON.stringify(data) });
@@ -103,6 +100,18 @@ class Nexios {
 
 	async delete<T = unknown>(url: string, config: NexiosOptions = {}): Promise<NexiosResponse<T>> {
 		return this.request<T>(url, { ...config, method: 'DELETE' });
+	}
+
+	setAuthHeader(token: string, isBearer: boolean = true) {
+		this.headers = { ...this.headers, Authorization: isBearer ? `Bearer ${token}` : token };
+	}
+
+	getErrorMsg(error: NexiosError): string {
+		if (!error.data) return error.statusMsg;
+		if (typeof error.data === 'string') return error.data;
+		if (error.data.message) return error.data.message;
+		if (error.data.error) return error.data.error;
+		return JSON.stringify(error.data); // fallback
 	}
 }
 
