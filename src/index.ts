@@ -38,7 +38,7 @@ class Nexios {
 		this.credentials = config.credentials || defaultConfig.credentials;
 		this.cache = config.cache || defaultConfig.cache;
 		this.timeout = config.timeout || defaultConfig.timeout;
-		this.getErrorMsg = config.getErrorMsg || this.getErrorMsg;
+		this.parseError = config.parseError || this.parseError;
 	}
 
 	async request<T = unknown>(url: string, options: NexiosOptions = {}): Promise<NexiosResponse<T>> {
@@ -63,7 +63,7 @@ class Nexios {
 
 		if (!response.ok) {
 			const error = new NexiosError(response);
-			error.message = this.getErrorMsg(error);
+			this.parseError(error);
 			throw error;
 		}
 
@@ -106,12 +106,12 @@ class Nexios {
 		this.headers = { ...this.headers, Authorization: isBearer ? `Bearer ${token}` : token };
 	}
 
-	getErrorMsg(error: NexiosError): string {
-		if (!error.data) return error.statusMsg;
-		if (typeof error.data === 'string') return error.data;
-		if (error.data.message) return error.data.message;
-		if (error.data.error) return error.data.error;
-		return JSON.stringify(error.data); // fallback
+	parseError(error: NexiosError) {
+		if (!error.data) error.message = error.statusMsg;
+		else if (typeof error.data === 'string') error.message = error.data;
+		else if (error.data.message) error.message = error.data.message;
+		else if (error.data.error) error.message = error.data.error;
+		else error.message = JSON.stringify(error.data);
 	}
 }
 

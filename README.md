@@ -48,8 +48,9 @@ const defaultConfig: NexiosConfig = {
 > Next.js has gone back and forth on the default cache option, Next 15 now defaults to `no-store`, where older versions use `force-cache`. For now we will stick with `force-cache` until users object.
 
 
-### Creating a nexios instance with optional configuration
-We can also override the default nexios configuration. Subsequent usage examples will use the following nexios instance, which defines baseURL to simplify request paths. Sometimes it makes sense to have multiple instances for different scenarios (client-side, server-side, authentication stages vs authorized requests, etc), custom configs make it easy to setup an instance for its specific role.
+
+### Creating a nexios instance with a custom configuration
+We can also override the default nexios configuration. Subsequent usage examples will use the following nexios instance, which defines `baseURL` to simplify request paths. Sometimes it makes sense to have multiple instances for different scenarios (client-side, server-side, authentication stages vs authorized requests, etc), custom configs make it easy to setup an instance for its specific role.
 
 ```typescript
 // nexios.ts
@@ -152,34 +153,34 @@ export default async function LoginPage() {
 
 
 ## Error Handling
-### `getErrorMsg`
-Nexios' default `getErrorMsg` method attempts to extract a detailed error message using common error response patterns directily to the error's message property. Since every web API responds with a different data structure, you can override this to fit the API you're consuming with this instance. This way you'll always have easy access to the error message for more graceful error handling.
+### `parseError()`
+Nexios' default `parseError` method attempts to extract a detailed error message using common error response patterns directly to the error's message property. Since every web API responds with a different data structure, you can override this to fit the API you're consuming with this instance. This way you'll always have easy access to the error message for more graceful error handling.
 
 ```typescript
-// the default getErrorMsg method
-getErrorMsg(error: NexiosError): string {
-	if (!error.data) return error.statusMsg;
-	if (typeof error.data === 'string') return error.data;
-	if (error.data.message) return error.data.message;
-	if (error.data.error) return error.data.error;
-	return JSON.stringify(error.data); // fallback
-}
+// the default parseError method
+parseError(error: NexiosError) {
+		if (!error.data) error.message = error.statusMsg;
+		else if (typeof error.data === 'string') error.message = error.data;
+		else if (error.data.message) error.message = error.data.message;
+		else if (error.data.error) error.message = error.data.error;
+		else error.message = JSON.stringify(error.data);
+	}
 ```
 
-`getErrorMsg` can be overridden at instantiation using the config object or later on the instance by reassignment.
+`parseError` can be overridden at instantiation using the config object or later on the instance by reassignment.
 
 ```typescript
 // nexios.ts
 import Nexios from 'nexios';
 
-// create the nexios instance with custom configuration
+// example: config override
 const nexios = new Nexios({
   baseURL: 'https://api.example.com',
-  getErrorMsg: (error: NexiosError) => error.data.error_message; // example: config override
+  parseError: (error: NexiosError) => error.data.error_message; 
 })
 
 // example: direct instance override
-nexios.getErrorMsg = (error: NexiosError) => error.data.error_msg;
+nexios.parseError = (error: NexiosError) => error.data.error_msg;
 ```
 
 ### Handling Error Messages
@@ -247,6 +248,24 @@ The API primarily exposes request methods that call `fetch()`. In TypeScript, yo
 - **`delete(url: string, options?: NexiosOptions)`**: Sends a DELETE request by calling `request()`.
 - **`setAuthHeader`**: If you choose to store tokens like JWTs within your instance, the `setAuthHeader` allows you to easily assign the token to the Authorization header of all requests from this instance.
 
+### Types
+#### `NexiosResponse`
+`NexiosResponse` extends `Response`, automatically deserializing the json of the response when generated.
+
+##### API
+- **data**: The deserialized body from the raw Response.
+- **response**: The raw Response object from `fetch`.
+
+#### `NexiosError`
+`NexiosError` extends `Error`, automatically deserializing json from a response whose fails the `ok` flag.
+##### API
+- **name**: "NexiosError"
+- **response**: The raw Response object.
+- **status**: The status code of the response (400, 500, 404...).
+- **statusMsg**: The long status message of the response (400 BAD REQUEST, 500 INTERNAL SERVER ERROR, 404 NOT FOUND...).
+- **data**: The deserialized body from the raw Response.
+- **message**: The detailed error message returned in the response, assigned with Nexios' `parseError`
+
 ### Interfaces
 #### `NexiosConfig`
 ```typescript
@@ -256,7 +275,7 @@ interface NexiosConfig {
 	credentials?: CredentialsOptions;
 	timeout?: number;
 	cache?: CacheOptions;
-	getErrorMsg?: (error: NexiosError) => string;
+	parseError?: (error: NexiosError) => string;
 }
 ```
 
@@ -281,20 +300,3 @@ interface NexiosHeaders {
 	'User-Agent'?: string;
 }
 ```
-
-### Types
-#### `NexiosResponse`
-`NexiosResponse` extends `Response`, automatically deserializing the json of the response when generated.
-
-##### API
-- **data**: The deserialized body from the raw Response.
-
-#### `NexiosError`
-`NexiosError` extends `Error`, automatically deserializing json from a response whose fails the `ok` flag.
-##### API
-- **name**: "NexiosError"
-- **response**: The raw Response object.
-- **status**: The status code of the response (400, 500, 404...).
-- **statusMsg**: The long status message of the response (400 BAD REQUEST, 500 INTERNAL SERVER ERROR, 404 NOT FOUND...).
-- **data**: The deserialized body from the raw Response.
-- **errorMsg**: The error message returned in the response
