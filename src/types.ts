@@ -14,7 +14,7 @@ export interface NexiosConfig {
 	credentials?: CredentialsOptions;
 	timeout?: number;
 	cache?: CacheOptions;
-	getErrorMsg?: (error: NexiosError) => string;
+	parseError?: (error: NexiosError) => string;
 }
 
 export interface NexiosOptions {
