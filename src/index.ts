@@ -1,12 +1,7 @@
-import {
-	NexiosConfig as NexiosConfig,
-	NexiosOptions,
-	NexiosResponse,
-	NexiosError,
-	NexiosHeaders,
-	CacheOptions,
-	CredentialsOptions,
-} from './types';
+import { NexiosHeaders, NexiosOptions } from './interfaces';
+import NexiosError from './NexiosError';
+import NexiosResponse from './NexiosResponse';
+import { NexiosConfig as NexiosConfig, CacheOptions, CredentialsOptions } from './types';
 
 export const defaultHeaders: NexiosHeaders = {
 	'Content-Type': 'application/json',

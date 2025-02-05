@@ -1,6 +1,7 @@
 import Nexios, { defaultConfig, defaultHeaders } from '../index';
 import fetchMock from 'jest-fetch-mock';
-import { NexiosError, NexiosOptions, NexiosHeaders } from '../types';
+import { NexiosHeaders, NexiosOptions } from '../interfaces';
+import NexiosError from '../NexiosError';
 
 describe('Nexios', () => {
 	const mockBaseURL = 'https://api.example.com';

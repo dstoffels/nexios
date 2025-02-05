@@ -5,20 +5,26 @@
 	"main": "dist/index.js",
 	"scripts": {
 		"build": "tsc",
-		"start": "node dist/index.js",
 		"test": "jest",
 		"test:watch": "jest --watch",
 		"test:coverage": "jest --coverage"
 	},
 	"repository": {
 		"type": "git",
-		"url": "github.com/dstoffels/nexios"
+		"url": "github.com/dstoffels/nexios.git"
 	},
+	"bugs": {
+		"url": "https://github.com/dstoffels/nexios/issues"
+	},
+	"homepage": "github.com/dstoffels/nexios.git",
 	"keywords": [
 		"axios",
 		"next",
 		"next.js",
-		"fetch"
+		"fetch",
+		"api",
+		"react",
+		"react.js"
 	],
 	"author": "Dan Stoffels",
 	"license": "MIT",
