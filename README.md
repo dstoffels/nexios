@@ -1,6 +1,6 @@
-# Nexios is a fetch wrapper that mimics the behavior of axios for server side use with Next.js
+# Nexios: an Axios clone for Next.js
 
-Nexios is a simple wrapper around the native `fetch` API designed to provide a more familiar API for making HTTP requests. It mimics the behavior of `axios` but is optimized for server-side usage with [Next.js](https://nextjs.org/).
+Nexios is a simple `fetch` wrapper designed to provide a more robust API for making HTTP requests. It mimics the behavior of `axios` but is designed for server-side integration with [Next.js](https://nextjs.org/).
 
 ## Installation
 
@@ -90,8 +90,8 @@ async function deleteData() {
 try {
   const response = await nexios.get('/endpoint');
 } catch (error) {
-  if (error instanceof NexiosResponseError) {
-    console.error('Request failed with status:', error.response.status);
+  if (error instanceof NexiosError) {
+    console.error('Request failed with status:', error.status, error.message);
   } else {
     console.error('Unexpected error:', error);
   }
