@@ -1,11 +1,11 @@
-import { NexiosHeaders, NexiosOptions } from './interfaces';
+import { NexiosOptions, NexiosConfig } from './interfaces';
 import NexiosError from './NexiosError';
 import NexiosResponse from './NexiosResponse';
-import { NexiosConfig as NexiosConfig, CacheOptions, CredentialsOptions } from './types';
+import { NexiosHeaders } from './types';
 
 export const defaultHeaders: NexiosHeaders = {
-	'Content-Type': 'application/json',
-	Accept: 'application/json',
+	'content-type': 'application/json',
+	accept: 'application/json',
 };
 
 export const defaultConfig: NexiosConfig = {
@@ -20,11 +20,10 @@ export const defaultConfig: NexiosConfig = {
  * Nexios is a fetch wrapper that mimics the behavior of axios, designed for use with Next.js.
  */
 class Nexios {
-	// Default request configuration, can be optionally overriding in constructor
 	baseURL?: string;
 	headers?: NexiosHeaders;
-	credentials?: CredentialsOptions;
-	cache?: CacheOptions;
+	credentials?: RequestCredentials;
+	cache?: RequestCache;
 	timeout?: number;
 
 	constructor(config: NexiosConfig = defaultConfig) {
@@ -98,7 +97,7 @@ class Nexios {
 	}
 
 	setAuthHeader(token: string, isBearer: boolean = true) {
-		this.headers = { ...this.headers, Authorization: isBearer ? `Bearer ${token}` : token };
+		this.headers = { ...this.headers, authorization: isBearer ? `Bearer ${token}` : token };
 	}
 
 	parseError(error: NexiosError) {

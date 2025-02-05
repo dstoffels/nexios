@@ -1,18 +1,19 @@
-import { CacheOptions, ContentTypes, CredentialsOptions } from './types';
+import NexiosError from './NexiosError';
+import { RequestMimeType, RequestMethod, NexiosHeaders } from './types';
 
-export interface NexiosHeaders {
-	Authorization?: string;
-	Accept?: ContentTypes;
-	'Content-Type'?: ContentTypes;
-	'User-Agent'?: string;
-}
-
-export interface NexiosOptions {
+export interface NexiosOptions extends RequestInit {
 	body?: any;
-	method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | (string & {});
+	method?: RequestMethod;
 	params?: Record<string, string | number>;
 	headers?: NexiosHeaders;
-	credentials?: CredentialsOptions;
-	cache?: CacheOptions;
 	timeout?: number;
+}
+
+export interface NexiosConfig {
+	baseURL?: string;
+	headers?: NexiosHeaders;
+	credentials?: RequestCredentials;
+	timeout?: number;
+	cache?: RequestCache;
+	parseError?: (error: NexiosError) => string;
 }

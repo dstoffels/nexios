@@ -1,3 +1,5 @@
+import { NexiosHeaders, RequestMimeType } from './types';
+
 export default class NexiosResponse<T = unknown> extends Response {
 	data: T | string | Blob | null = null;
 	response: Response;
@@ -12,7 +14,7 @@ export default class NexiosResponse<T = unknown> extends Response {
 		const contentType = this.headers.get('content-type') || '';
 
 		try {
-			if (contentType.includes('application/json')) {
+			if (contentType.includes('json')) {
 				this.data = await this.response.json();
 			} else if (contentType.includes('text')) {
 				this.data = await this.response.text();
