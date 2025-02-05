@@ -32,7 +32,9 @@ describe('Nexios', () => {
 		const customConfig: NexiosOptions = { ...defaultConfig, method: 'OPTIONS', headers };
 
 		beforeEach(() => {
-			fetchMock.mockResponse(JSON.stringify(mockResponse));
+			fetchMock.mockResponse(JSON.stringify(mockResponse), {
+				headers: { 'Content-Type': 'application/json' },
+			});
 		});
 
 		it('should make a GET request with custom config', async () => {
@@ -57,6 +59,7 @@ describe('Nexios', () => {
 				assembledUrl.toString(),
 				expect.objectContaining({ method: 'GET' }),
 			);
+			expect(response.data).toEqual(mockResponse);
 		});
 
 		const mockData = { username: 'Michael Scotch' };
@@ -118,8 +121,11 @@ describe('Nexios', () => {
 	describe('Error Handling', () => {
 		it('should throw NexiosError for non-200 responses', async () => {
 			// setup mock response
-			const errorResponse = { message: 'Not Found' };
-			fetchMock.mockResponseOnce(JSON.stringify(errorResponse), { status: 404 });
+			const errorResponse = { message: '404 NOT FOUND' };
+			fetchMock.mockResponseOnce(JSON.stringify(errorResponse), {
+				status: 404,
+				headers: { 'Content-Type': 'application/json' },
+			});
 
 			await expect(nexios.get('/nonexistent')).rejects.toThrow('404 NOT FOUND');
 		});
@@ -130,7 +136,10 @@ describe('Nexios', () => {
 				message: 'Validation Error',
 				errors: ['Invalid input'],
 			};
-			fetchMock.mockResponseOnce(JSON.stringify(errorResponse), { status: 400 });
+			fetchMock.mockResponseOnce(JSON.stringify(errorResponse), {
+				status: 400,
+				headers: { 'Content-Type': 'application/json' },
+			});
 
 			try {
 				await nexios.post('/users', {});

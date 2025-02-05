@@ -66,12 +66,13 @@ export class NexiosResponse<T = unknown> extends Response {
 
 	constructor(response: Response) {
 		super();
-		this.response = response;
 		Object.assign(this, response);
+		this.response = response;
 	}
 
 	async tryResolveStream() {
 		const contentType = this.headers.get('content-type') || '';
+
 		try {
 			if (contentType.includes('application/json')) {
 				this.data = await this.response.json();

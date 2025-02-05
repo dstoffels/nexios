@@ -58,7 +58,7 @@ class Nexios {
 			credentials: options.credentials || this.credentials,
 		});
 
-		const response = new NexiosResponse(rawResponse);
+		const response = new NexiosResponse<T>(rawResponse);
 		await response.tryResolveStream();
 
 		if (!response.ok) {
@@ -67,7 +67,7 @@ class Nexios {
 			throw error;
 		}
 
-		return new NexiosResponse<T>(rawResponse);
+		return response;
 	}
 
 	async get<T = unknown>(url: string, config: NexiosOptions = {}): Promise<NexiosResponse<T>> {
