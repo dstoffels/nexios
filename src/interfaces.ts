@@ -1,5 +1,5 @@
 import { Agent } from 'http';
-import { RequestMethod, NexiosHeaders, Params } from './types';
+import { RequestMethod, Params, ResponseEncoding, ContentType } from './types';
 import NexiosResponse from './NexiosResponse';
 
 export interface NexiosConfig extends RequestInit {
@@ -16,22 +16,23 @@ export interface NexiosConfig extends RequestInit {
 	url?: string;
 	method?: RequestMethod;
 	baseURL?: string;
+	bypassBaseURL?: boolean;
 	// transformRequest?: Array<(data: any, headers: NexiosHeaders) => any>;
 	// transformResponse?: Array<(data: any) => any>;
 	headers?: NexiosHeaders;
 	params?: Params;
-	// paramsSerializer?: (params: Params) => string;
-	// data?: any;
+	paramsSerializer?: (params?: Params) => string;
+	data?: any;
 	timeout?: number;
 	// withCredentials?: boolean;
-	// auth?: {
-	// 	username: string;
-	// 	password: string;
-	// };
+	auth?: {
+		username: string;
+		password: string;
+	};
 	// responseType?: XMLHttpRequestResponseType;
-	// responseEncoding?: string;
-	// xsrfCookieName?: string;
-	// xsrfHeaderName?: string;
+	// responseEncoding?: ResponseEncoding;
+	xsrfCookieName?: string;
+	xsrfHeaderName?: string;
 	// onUploadProgress?: (progressEvent: ProgressEvent) => void;
 	// onDownloadProgress?: (progressEvent: ProgressEvent) => void;
 	// maxContentLength?: number;
@@ -54,6 +55,16 @@ export interface NexiosConfig extends RequestInit {
 
 	/** Tells Nexios to automatically decompress the response body. */
 	// decompress?: boolean;
+}
+
+export interface NexiosHeaders extends Headers {
+	Accept?: ContentType;
+	'Content-Length'?: string;
+	'User-Agent'?: string;
+	'Content-Encoding'?: ResponseEncoding;
+	'Content-Type'?: ContentType;
+	Authorization?: string;
+	Cookie?: string | string[];
 }
 
 export interface Interceptor<T> {

@@ -1,4 +1,4 @@
-import { NexiosHeaders, RequestMimeType } from './types';
+import { ContentType } from './types';
 
 export default class NexiosResponse<T = unknown> extends Response {
 	data: T | string | Blob | null | Error = null;
@@ -11,7 +11,7 @@ export default class NexiosResponse<T = unknown> extends Response {
 	}
 
 	async tryResolveStream() {
-		const contentType = this.headers.get('content-type') || '';
+		const contentType: ContentType = this.headers.get('content-type') || '';
 
 		try {
 			if (contentType.includes('json')) {

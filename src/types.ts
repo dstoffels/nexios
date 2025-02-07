@@ -1,23 +1,46 @@
 import { OutgoingHttpHeaders } from 'http2';
 
 export type RequestMethod =
+	| 'get'
 	| 'GET'
-	| 'POST'
-	| 'PUT'
-	| 'PATCH'
+	| 'delete'
 	| 'DELETE'
+	| 'head'
 	| 'HEAD'
+	| 'options'
 	| 'OPTIONS'
-	| 'TRACE'
-	| 'CONNECT'
+	| 'post'
+	| 'POST'
+	| 'put'
+	| 'PUT'
+	| 'patch'
+	| 'PATCH'
+	| 'purge'
+	| 'PURGE'
+	| 'link'
+	| 'LINK'
+	| 'unlink'
+	| 'UNLINK'
 	| (string & {});
 
-export type RequestMimeType =
+export type ResponseType =
+	| 'arraybuffer'
+	| 'blob'
+	| 'document'
+	| 'json'
+	| 'text'
+	| 'stream'
+	| 'formdata';
+
+export type NexiosHeaderValue = string | string[] | number | boolean | null | undefined;
+
+export type ContentType =
+	| 'text/html'
+	| 'text/plain'
+	| 'multipart/form-data'
 	| 'application/json'
 	| 'application/x-www-form-urlencoded'
-	| 'multipart/form-data'
-	| 'text/plain'
-	| 'text/html'
+	| 'application/octet-stream'
 	| 'application/xml'
 	| 'application/pdf'
 	| 'image/png'
@@ -29,70 +52,30 @@ export type RequestMimeType =
 	| 'video/webm'
 	| (string & {});
 
-export type NexiosHeaders = Record<string, string> & {
-	accept?: RequestMimeType;
-	'accept-language'?: string;
-	'accept-patch'?: string;
-	'accept-ranges'?: string;
-	'access-control-allow-credentials'?: string;
-	'access-control-allow-headers'?: string;
-	'access-control-allow-methods'?: string;
-	'access-control-allow-origin'?: string;
-	'access-control-expose-headers'?: string;
-	'access-control-max-age'?: string;
-	'access-control-request-headers'?: string;
-	'access-control-request-method'?: string;
-	age?: string;
-	allow?: string;
-	'alt-svc'?: string;
-	authorization?: string;
-	'cache-control'?: string;
-	connection?: string;
-	'content-disposition'?: string;
-	'content-encoding'?: string;
-	'content-language'?: string;
-	'content-length'?: string;
-	'content-location'?: string;
-	'content-range'?: string;
-	'content-type'?: RequestMimeType;
-	cookie?: string;
-	date?: string;
-	etag?: string;
-	expect?: string;
-	expires?: string;
-	forwarded?: string;
-	from?: string;
-	host?: string;
-	'if-match'?: string;
-	'if-modified-since'?: string;
-	'if-none-match'?: string;
-	'if-unmodified-since'?: string;
-	'last-modified'?: string;
-	location?: string;
-	origin?: string;
-	pragma?: string;
-	'proxy-authenticate'?: string;
-	'proxy-authorization'?: string;
-	'public-key-pins'?: string;
-	range?: string;
-	referer?: string;
-	'retry-after'?: string;
-	'sec-websocket-accept'?: string;
-	'sec-websocket-extensions'?: string;
-	'sec-websocket-key'?: string;
-	'sec-websocket-protocol'?: string;
-	'sec-websocket-version'?: string;
-	'set-cookie'?: string;
-	'strict-transport-security'?: string;
-	tk?: string;
-	trailer?: string;
-	'transfer-encoding'?: string;
-	upgrade?: string;
-	'user-agent'?: string;
-	vary?: string;
-	via?: string;
-	warning?: string;
-	'www-authenticate'?: string;
-};
+export type ResponseEncoding =
+	| 'ascii'
+	| 'ASCII'
+	| 'ansi'
+	| 'ANSI'
+	| 'binary'
+	| 'BINARY'
+	| 'base64'
+	| 'BASE64'
+	| 'base64url'
+	| 'BASE64URL'
+	| 'hex'
+	| 'HEX'
+	| 'latin1'
+	| 'LATIN1'
+	| 'ucs-2'
+	| 'UCS-2'
+	| 'ucs2'
+	| 'UCS2'
+	| 'utf-8'
+	| 'UTF-8'
+	| 'utf8'
+	| 'UTF8'
+	| 'utf16le'
+	| 'UTF16LE';
 
-export type Params = Record<string, string | number>;
+export type Params = Record<string, string>;
