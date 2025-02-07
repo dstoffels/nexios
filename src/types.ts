@@ -94,3 +94,5 @@ export type NexiosHeaders = Record<string, string> & {
 	warning?: string;
 	'www-authenticate'?: string;
 };
+
+export type Params = Record<string, string | number>;

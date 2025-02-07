@@ -1,6 +1,6 @@
 import Nexios, { defaultConfig, defaultHeaders } from '../index';
 import fetchMock from 'jest-fetch-mock';
-import { NexiosOptions } from '../interfaces';
+import { NexiosConfig } from '../interfaces';
 import NexiosError from '../NexiosError';
 import { NexiosHeaders } from '../types';
 
@@ -31,7 +31,7 @@ describe('Nexios', () => {
 		let mockPath = '/users';
 		let mockURL = `${mockBaseURL}${mockPath}`;
 		const headers: NexiosHeaders = { ...defaultHeaders, authorization: 'Bearer TOKEN' };
-		const customConfig: NexiosOptions = { ...defaultConfig, method: 'OPTIONS', headers };
+		const customConfig: NexiosConfig = { ...defaultConfig, method: 'OPTIONS', headers };
 
 		beforeEach(() => {
 			fetchMock.mockResponse(JSON.stringify(mockResponse), {

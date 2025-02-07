@@ -1,7 +1,7 @@
 import { NexiosHeaders, RequestMimeType } from './types';
 
 export default class NexiosResponse<T = unknown> extends Response {
-	data: T | string | Blob | null = null;
+	data: T | string | Blob | null | Error = null;
 	response: Response;
 
 	constructor(response: Response) {

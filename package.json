@@ -29,13 +29,14 @@
 	"author": "Dan Stoffels",
 	"license": "MIT",
 	"devDependencies": {
-		"@types/node": "^20.14.10",
-		"ts-node": "^10.9.2",
-		"typescript": "^5.5.3",
 		"@types/jest": "^29.5.14",
+		"@types/node": "^20.14.10",
+		"axios": "^1.7.9",
 		"jest": "^29.7.0",
 		"jest-fetch-mock": "^3.0.3",
-		"ts-jest": "^29.2.5"
+		"ts-jest": "^29.2.5",
+		"ts-node": "^10.9.2",
+		"typescript": "^5.5.3"
 	},
 	"files": [
 		"dist/**/*",
