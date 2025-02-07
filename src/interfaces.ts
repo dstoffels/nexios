@@ -1,5 +1,5 @@
 import { Agent } from 'http';
-import { RequestMethod, Params, ResponseEncoding, ContentType } from './types';
+import { RequestMethod, Params, ResponseEncoding, ContentType, ResponseType } from './types';
 import NexiosResponse from './NexiosResponse';
 
 export interface NexiosConfig extends RequestInit {
@@ -29,7 +29,7 @@ export interface NexiosConfig extends RequestInit {
 		username: string;
 		password: string;
 	};
-	// responseType?: XMLHttpRequestResponseType;
+	responseType?: ResponseType;
 	// responseEncoding?: ResponseEncoding;
 	xsrfCookieName?: string;
 	xsrfHeaderName?: string;

@@ -15,7 +15,7 @@ export const defaultConfig: NexiosConfig = {
 	credentials: 'include',
 	cache: 'force-cache',
 	headers: new Headers(),
-	// responseType: 'json',
+	responseType: 'json',
 	// responseEncoding: 'utf8',
 	xsrfCookieName: 'XSRF-TOKEN',
 	xsrfHeaderName: 'X-XSRF-TOKEN',
@@ -60,7 +60,7 @@ class Nexios {
 			const { url, init } = new NexiosRequest(interceptedConfig);
 			const rawResponse = await fetch(url, init);
 
-			const response = new NexiosResponse<T>(rawResponse);
+			const response = new NexiosResponse<T>(rawResponse, config);
 			await response.tryResolveStream();
 
 			if (!response.ok) throw new NexiosError(response, this.transformErrorMsg);

@@ -1,29 +1,38 @@
+import { NexiosConfig } from './interfaces';
+import NexiosError from './NexiosError';
 import { ContentType } from './types';
 
 export default class NexiosResponse<T = unknown> extends Response {
-	data: T | string | Blob | null | Error = null;
-	response: Response;
+	data: T | null = null;
+	config: NexiosConfig;
 
-	constructor(response: Response) {
-		super();
-		Object.assign(this, response);
-		this.response = response;
+	constructor(response: Response, config: NexiosConfig) {
+		super(response.body, { ...response });
+		this.config = config;
 	}
 
 	async tryResolveStream() {
-		const contentType: ContentType = this.headers.get('content-type') || '';
+		const { responseType } = this.config;
 
 		try {
-			if (contentType.includes('json')) {
-				this.data = await this.response.json();
-			} else if (contentType.includes('text')) {
-				this.data = await this.response.text();
-			} else {
-				this.data = await this.response.blob();
+			switch (responseType) {
+				case 'json':
+					this.data = (await this.json()) as T;
+					break;
+				case 'blob':
+					this.data = (await this.blob()) as T;
+					break;
+				case 'arraybuffer':
+					this.data = (await this.arrayBuffer()) as T;
+					break;
+				case 'text':
+					this.data = (await this.text()) as T;
+					break;
+				default:
+					this.data = (await this.json()) as T;
 			}
-		} catch {
-			this.data = null;
-			return false;
+		} catch (error) {
+			throw new NexiosError(this, () => (error as Error).message);
 		}
 	}
 
