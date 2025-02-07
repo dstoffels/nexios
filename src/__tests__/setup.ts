@@ -34,20 +34,26 @@ export const getUserIndex = (userId: number | string): number => {
 
 const server = setupServer(
 	// READ (all)
-	http.get(`${baseURL}/users`, () => {
-		return HttpResponse.json({
-			users,
-		});
+
+	http.get(`${baseURL}/users`, ({ request }) => {
+		try {
+			return HttpResponse.json({
+				users,
+			});
+		} catch (error) {
+			return HttpResponse.json({ error: (error as Error).message }, { status: 400 });
+		}
 	}),
 
 	// CREATE
 	http.post(`${baseURL}/users`, async ({ request }) => {
 		try {
 			const body = (await request.json()) as User;
-			users.push(body);
-			return HttpResponse.json({ body }, { status: 201 });
+			const newUser: User = { ...body, id: users[users.length - 1].id + 1 };
+			users.push(newUser);
+			return HttpResponse.json(newUser, { status: 201 });
 		} catch (error) {
-			return HttpResponse.json({ error: (error as Error).message }, { status: 400 });
+			return HttpResponse.json({ error: (error as Error).message }, { status: 500 });
 		}
 	}),
 
@@ -58,7 +64,7 @@ const server = setupServer(
 			let i = getUserIndex(id as string);
 			const body = (await request.json()) as User;
 			users[i] = body;
-			return HttpResponse.json({ body }, { status: 200 });
+			return HttpResponse.json(body, { status: 200 });
 		} catch (error) {
 			return HttpResponse.json({ error: (error as Error).message }, { status: 400 });
 		}
@@ -72,7 +78,7 @@ const server = setupServer(
 			const body = (await request.json()) as User;
 			const updatedUser = { ...users[i], ...body };
 			users[i] = updatedUser;
-			return HttpResponse.json({ updatedUser }, { status: 200 });
+			return HttpResponse.json(updatedUser, { status: 200 });
 		} catch (error) {
 			return HttpResponse.json({ error: (error as Error).message }, { status: 400 });
 		}
@@ -93,8 +99,9 @@ const server = setupServer(
 
 server.listen();
 
-export function setEndpointListener(handler: (request: Request) => void) {
-	server.events.on('request:end', ({ request }) => handler(request));
+/** Passes a request clone to a test callback that's triggered when the server receives a request. */
+export function interceptRequest(handler: (request: Request) => void) {
+	server.events.on('request:start', ({ request }) => handler(request.clone()));
 }
 
 export function clearEndpointListeners() {

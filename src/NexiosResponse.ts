@@ -2,38 +2,93 @@ import { NexiosConfig } from './interfaces';
 import NexiosError from './NexiosError';
 import { ContentType } from './types';
 
-export default class NexiosResponse<T = unknown> extends Response {
-	data: T | null = null;
+export default class NexiosResponse<T = unknown> {
+	data: T | null;
 	config: NexiosConfig;
+	raw: Response;
+
+	status: number;
+	statusText: string;
+	headers: Headers;
+	ok: boolean;
+	redirected: boolean;
+	type: ResponseType;
+	url: string;
+	body: ReadableStream<Uint8Array> | null;
+	bodyUsed: boolean;
 
 	constructor(response: Response, config: NexiosConfig) {
-		super(response.body, { ...response });
+		this.data = null;
 		this.config = config;
+		this.raw = response;
+
+		this.status = response.status;
+		this.statusText = response.statusText;
+		this.headers = new Headers(response.headers);
+		this.ok = response.ok;
+		this.redirected = response.redirected;
+		this.type = response.type;
+		this.url = response.url;
+		this.body = response.body;
+		this.bodyUsed = response.bodyUsed;
 	}
 
-	async tryResolveStream() {
-		const { responseType } = this.config;
+	async resolveBody() {
+		const contentType = this.headers.get('Content-Type') as ContentType;
 
 		try {
-			switch (responseType) {
-				case 'json':
-					this.data = (await this.json()) as T;
+			const response = this.raw.clone();
+
+			switch (contentType) {
+				case 'application/json':
+				case 'application/xml':
+					this.data = (await response.json()) as T;
 					break;
-				case 'blob':
-					this.data = (await this.blob()) as T;
+				case 'application/octet-stream':
+				case 'image/jpeg':
+				case 'image/png':
+				case 'image/webp':
+				case 'audio/mpeg':
+				case 'audio/ogg':
+				case 'video/mp4':
+				case 'video/webm':
+					this.data = (await response.blob()) as T;
 					break;
-				case 'arraybuffer':
-					this.data = (await this.arrayBuffer()) as T;
+				case 'application/pdf':
+				case 'multipart/form-data':
+				case 'application/x-www-form-urlencoded':
+					this.data = (await response.arrayBuffer()) as T;
 					break;
-				case 'text':
-					this.data = (await this.text()) as T;
+				case 'text/html':
+				case 'text/plain':
+					this.data = (await response.text()) as T;
 					break;
 				default:
-					this.data = (await this.json()) as T;
+					this.data = null;
 			}
 		} catch (error) {
 			throw new NexiosError(this, () => (error as Error).message);
 		}
+	}
+
+	async arrayBuffer(): Promise<ArrayBuffer> {
+		return this.raw.arrayBuffer();
+	}
+
+	async blob(): Promise<Blob> {
+		return this.raw.blob();
+	}
+
+	async formData(): Promise<FormData> {
+		return this.raw.formData();
+	}
+
+	async json(): Promise<any> {
+		return this.raw.json();
+	}
+
+	async text(): Promise<string> {
+		return this.raw.text();
 	}
 
 	static statusCodes: { [key: number]: string } = {

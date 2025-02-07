@@ -5,14 +5,17 @@ import { Params } from './types';
 export default class NexiosRequest {
 	config: NexiosConfig;
 	url: string;
-	init: RequestInit;
+	get init() {
+		return this.config;
+	}
 
 	constructor(config: NexiosConfig) {
 		this.config = config;
 		this.url = '';
-		this.init = { ...(config as RequestInit) };
 
 		if (!config.headers) this.config.headers = new Headers();
+
+		if (config.data) config.body = JSON.stringify(config.data);
 
 		this.setXSRFHeader();
 		this.setBasicAuth();

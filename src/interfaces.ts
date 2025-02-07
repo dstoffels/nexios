@@ -59,7 +59,7 @@ export interface NexiosConfig extends RequestInit {
 
 export interface NexiosHeaders extends Headers {
 	Accept?: ContentType;
-	'Content-Length'?: string;
+	'Content-Length'?: ContentType;
 	'User-Agent'?: string;
 	'Content-Encoding'?: ResponseEncoding;
 	'Content-Type'?: ContentType;

@@ -60,8 +60,8 @@ class Nexios {
 			const { url, init } = new NexiosRequest(interceptedConfig);
 			const rawResponse = await fetch(url, init);
 
-			const response = new NexiosResponse<T>(rawResponse, config);
-			await response.tryResolveStream();
+			const response = new NexiosResponse<T>(rawResponse, interceptedConfig);
+			await response.resolveBody();
 
 			if (!response.ok) throw new NexiosError(response, this.transformErrorMsg);
 
