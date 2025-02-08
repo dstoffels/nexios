@@ -14,7 +14,7 @@ export interface NexiosConfig extends RequestInit {
 	};
 
 	/** An override for the default Nexios Error transformer  */
-	transformErrorMsg?: (response: NexiosResponse) => string;
+	transformErrorMsg?: <T>(response: NexiosResponse<T>) => string;
 
 	// Standard Axios Config (unimplemented features commented out)
 	url?: string;

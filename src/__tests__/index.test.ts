@@ -9,8 +9,6 @@ import {
 } from './setup';
 import { NexiosConfig, NexiosHeaders } from '../interfaces';
 import NexiosError from '../NexiosError';
-import NexiosRequest from '../NexiosRequest';
-import exp from 'constants';
 
 describe('Nexios', () => {
 	let nexios: Nexios;
@@ -21,14 +19,26 @@ describe('Nexios', () => {
 		nexios = new Nexios({ baseURL });
 	});
 
-	describe('ctor', () => {
+	describe('Initialization', () => {
 		it('should initialize with default config', () => {
 			const nexios = new Nexios();
 			expect(nexios.defaults).toEqual(defaultConfig);
 		});
 
-		it('should override default baseUrl', () => {
+		it('should initialize with merged custom and default config', () => {
+			const headers = new Headers({ 'Content-Type': 'text/plain' });
+			nexios = new Nexios({ baseURL, cache: 'no-cache', headers });
 			expect(nexios.baseURL).toBe(baseURL);
+			expect(nexios.defaults.cache).toBe('no-cache');
+			expect(nexios.defaults.headers).toEqual(headers);
+			expect(nexios.defaults.withCredentials).toBe(true);
+			expect(nexios.defaults.headers?.get('Content-Type')).toBe('text/plain');
+		});
+
+		it('should set the Authorization header', async () => {
+			const token = 'NEW_TOKEN';
+			nexios.setAuthHeader(token);
+			expect(nexios.defaults.headers?.get('Authorization')).toBe(`Bearer ${token}`);
 		});
 	});
 
@@ -182,6 +192,61 @@ describe('Nexios', () => {
 					expect(error.status).toBe(500);
 					expect(error.statusMsg).toBe('500 INTERNAL SERVER ERROR');
 					expect(error.message).toBe('500 Internal Server Error');
+				}
+			}
+		});
+
+		it('should extract error response message as string', async () => {
+			try {
+				await nexios.get('/error/string');
+			} catch (error) {
+				expect(error).toBeInstanceOf(NexiosError);
+				if (error instanceof NexiosError) {
+					expect(error.message).toBe('500 Internal Server Error');
+					expect(error.data).toBe('500 Internal Server Error');
+				}
+			}
+		});
+
+		it('should extract error response message from message property', async () => {
+			try {
+				await nexios.get('/error/message');
+			} catch (error) {
+				expect(error).toBeInstanceOf(NexiosError);
+				if (error instanceof NexiosError) {
+					expect(error.message).toBe('500 Internal Server Error');
+					expect(error.data.message).toBe('500 Internal Server Error');
+				}
+			}
+		});
+
+		it('should extract error response message from error property', async () => {
+			try {
+				await nexios.get('/error/error');
+			} catch (error) {
+				expect(error).toBeInstanceOf(NexiosError);
+				if (error instanceof NexiosError) {
+					expect(error.message).toBe('500 Internal Server Error');
+					expect(error.data.error).toBe('500 Internal Server Error');
+				}
+			}
+		});
+
+		it('should extract error response message from custom extractor', async () => {
+			nexios = new Nexios({
+				baseURL,
+				transformErrorMsg: (response) => (response.data as any)?.error.msg as string,
+			});
+
+			try {
+				(nexios.transformErrorMsg = (response) => (response.data as any)?.error.msg as string),
+					await nexios.get('/error/object');
+			} catch (error) {
+				expect(error).toBeInstanceOf(NexiosError);
+				if (error instanceof NexiosError) {
+					expect(error.message).toBe('500 Internal Server Error');
+					expect(error.data.error.code).toBe(500);
+					expect(error.data.error.msg).toBe('500 Internal Server Error');
 				}
 			}
 		});

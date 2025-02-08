@@ -139,6 +139,25 @@ export const server = setupServer(
 	http.get(`${baseURL}/error`, ({ request }) => {
 		return HttpResponse.json({ error: '500 Internal Server Error' }, { status: 500 });
 	}),
+	http.get(`${baseURL}/error/:format`, ({ params }) => {
+		const { format } = params;
+
+		switch (format) {
+			case 'string':
+				return HttpResponse.json('500 Internal Server Error', { status: 500 });
+			case 'message':
+				return HttpResponse.json({ message: '500 Internal Server Error' }, { status: 500 });
+			case 'error':
+				return HttpResponse.json({ error: '500 Internal Server Error' }, { status: 500 });
+			case 'object':
+				return HttpResponse.json(
+					{ error: { code: 500, msg: '500 Internal Server Error' } },
+					{ status: 500 },
+				);
+		}
+
+		return HttpResponse.json({ error: '500 Internal Server Error' }, { status: 500 });
+	}),
 
 	http.get('https://otherapi.com', ({ request }) => {
 		return HttpResponse.json('This is a response from another API.');

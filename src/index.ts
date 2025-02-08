@@ -15,7 +15,7 @@ export const defaultConfig: NexiosConfig = {
 	// credentials: 'include',
 	withCredentials: true,
 	cache: 'force-cache',
-	headers: new Headers(),
+	headers: new Headers({ 'Content-Type': 'application/json' } as NexiosHeaders),
 	responseType: 'json',
 	// responseEncoding: 'utf8',
 	xsrfCookieName: 'XSRF-TOKEN',
@@ -74,7 +74,7 @@ class Nexios {
 			await response.resolveBody();
 
 			// HANDLE RESPONSE
-			if (!response.ok) throw new NexiosError(this.transformErrorMsg(response), response);
+			if (!response.ok) throw new NexiosError(this.transformErrorMsg<T>(response), response);
 
 			// FINALIZE RESPONSE
 			return await this.runResponseInterceptors(response);
@@ -126,16 +126,13 @@ class Nexios {
 	}
 
 	setAuthHeader(token: string, isBearer: boolean = true) {
-		this.defaults.headers = {
-			...this.defaults.headers,
-			Authorization: isBearer ? `Bearer ${token}` : token,
-		} as NexiosHeaders;
+		this.defaults.headers?.set('Authorization', isBearer ? `Bearer ${token}` : token);
 	}
 
 	/**
 	 * Called when a NexiosError is thrown due to a 400/500 response. Common patterns are checked to automatically assign the response's error details to error.message. Can be overridden directly or in the instance config to fit the error response pattern of the API this instance consumes.
 	 */
-	transformErrorMsg(response: NexiosResponse): string {
+	transformErrorMsg<T>(response: NexiosResponse<T>): string {
 		const data = response.data as any;
 
 		if (typeof data === 'string') return data;
