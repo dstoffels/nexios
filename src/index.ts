@@ -141,21 +141,22 @@ class Nexios {
 		else return JSON.stringify(data);
 	}
 
-	private async runRequestInterceptors(options: NexiosConfig): Promise<NexiosConfig> {
-		let chainedOptions = options;
+	private async runRequestInterceptors(config: NexiosConfig): Promise<NexiosConfig> {
+		let chainedConfig = config;
 
 		this.interceptors.request.foreach(async ({ onFulfilled, onRejected }) => {
 			if (onFulfilled) {
 				try {
-					chainedOptions = await onFulfilled(chainedOptions);
+					chainedConfig = await onFulfilled(chainedConfig);
 				} catch (error) {
-					if (onRejected) chainedOptions = await onRejected(error);
-					else throw error;
+					if (onRejected) {
+						error = await onRejected(error);
+					} else throw error;
 				}
 			}
 		});
 
-		return chainedOptions;
+		return chainedConfig;
 	}
 
 	private async runResponseInterceptors<T>(
@@ -181,10 +182,10 @@ class Nexios {
 		return {
 			...this.defaults,
 			...config,
-			headers: {
+			headers: new Headers({
 				...this.defaults.headers,
 				...config?.headers,
-			} as NexiosHeaders,
+			} as NexiosHeaders),
 		};
 	}
 

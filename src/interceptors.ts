@@ -3,6 +3,12 @@ import { Interceptor } from './interfaces';
 export default class InterceptorManager<T> {
 	private handlers: Array<Interceptor<T> | null> = [];
 
+	get size(): number {
+		let count = 0;
+		this.handlers.forEach((h) => h && count++);
+		return count;
+	}
+
 	use(onFulfilled?: (value: T) => T | Promise<T>, onRejected?: (error: any) => any): number {
 		this.handlers.push({
 			onFulfilled,
