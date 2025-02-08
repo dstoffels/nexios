@@ -14,7 +14,7 @@ describe('Interceptors', () => {
 		clearEndpointListeners();
 	});
 
-	const token = 'asd0hh7h9sdv778fvh69sv8dyvsd';
+	const token = 'TEST_TOKEN';
 
 	it('should intercept requests', async () => {
 		function addToken(config: NexiosConfig) {
