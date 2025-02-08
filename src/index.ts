@@ -1,117 +1,218 @@
-import {
-	NexiosConfig as NexiosConfig,
-	NexiosOptions,
-	NexiosResponse,
-	NexiosError,
-	NexiosHeaders,
-	CacheOptions,
-	CredentialsOptions,
-} from './types';
+import InterceptorManager from './interceptors';
+import { NexiosConfig, NexiosHeaders } from './interfaces';
+import NexiosError from './NexiosError';
+import NexiosRequest from './NexiosRequest';
+import NexiosResponse from './NexiosResponse';
+import { Params } from './types';
+import { Axios, AxiosHeaders, AxiosResponse } from 'axios';
 
-export const defaultHeaders: NexiosHeaders = {
-	'Content-Type': 'application/json',
-	Accept: 'application/json',
-};
-
+// With default Axios Config (unimplemented features commented out)
 export const defaultConfig: NexiosConfig = {
+	method: 'GET',
 	baseURL: '',
-	headers: defaultHeaders,
-	credentials: 'include',
+	bypassBaseURL: false,
+	timeout: 1000,
+	// credentials: 'include',
+	withCredentials: true,
 	cache: 'force-cache',
-	timeout: 10000,
+	headers: new Headers({ 'Content-Type': 'application/json' } as NexiosHeaders),
+	responseType: 'json',
+	// responseEncoding: 'utf8',
+	xsrfCookieName: 'XSRF-TOKEN',
+	xsrfHeaderName: 'X-XSRF-TOKEN',
+	// maxContentLength: 2000,
+	// maxBodyLength: 2000,
+	// maxRedirects: 5,
+	// socketPath: null,
+	// decompress: true,
+	transformErrorMsg: (response: NexiosResponse): string => {
+		const data = response.data as any;
+
+		if (typeof data === 'string') return data;
+		else if (data?.message) return data.message;
+		else if (data?.error) return data.error;
+		else return 'An unknown error occurred';
+	},
 };
 
 /**
  * Nexios is a fetch wrapper that mimics the behavior of axios, designed for use with Next.js.
  */
 class Nexios {
-	// Default request configuration, can be optionally overriding in constructor
-	baseURL?: string;
-	headers?: NexiosHeaders;
-	credentials?: CredentialsOptions;
-	cache?: CacheOptions;
-	timeout?: number;
+	defaults: NexiosConfig;
 
-	constructor(config: NexiosConfig = defaultConfig) {
-		this.baseURL = config.baseURL || defaultConfig.baseURL;
-		this.headers = { ...defaultHeaders, ...config.headers };
-		this.credentials = config.credentials || defaultConfig.credentials;
-		this.cache = config.cache || defaultConfig.cache;
-		this.timeout = config.timeout || defaultConfig.timeout;
-		this.parseError = config.parseError || this.parseError;
+	interceptors: {
+		request: InterceptorManager<NexiosConfig>;
+		response: InterceptorManager<NexiosResponse>;
+	};
+
+	get baseURL() {
+		return this.defaults.baseURL;
 	}
 
-	async request<T = unknown>(url: string, options: NexiosOptions = {}): Promise<NexiosResponse<T>> {
-		const urlObj = new URL(`${this.baseURL}${url}`);
-		if (options.params)
-			Object.entries(options.params).forEach(([k, v]) =>
-				urlObj.searchParams.append(k, v.toString()),
-			);
+	constructor(config?: NexiosConfig) {
+		const mergedDefaults = { ...defaultConfig, ...config };
+		this.defaults = mergedDefaults;
+		// this.transformErrorMsg = config?.transformErrorMsg || this.transformErrorMsg;
+		this.interceptors = {
+			request: new InterceptorManager<NexiosConfig>(),
+			response: new InterceptorManager<NexiosResponse>(),
+		};
+	}
 
-		const rawResponse = await fetch(urlObj.toString(), {
-			...options,
-			headers: {
-				...this.headers,
-				...(options.headers || {}),
-			},
-			cache: options.cache || this.cache,
-			credentials: options.credentials || this.credentials,
-		});
+	async request<T = unknown>(config: NexiosConfig): Promise<NexiosResponse<T>> {
+		try {
+			// FINALIZE CONFIG
+			var mergedConfig = this.mergeConfig(config);
+			var interceptedConfig = await this.runRequestInterceptors(mergedConfig);
 
-		const response = new NexiosResponse<T>(rawResponse);
-		await response.tryResolveStream();
+			// TIMEOUT
+			const { signal, timeoutId } = this.startTimeout(interceptedConfig.timeout as number);
+			interceptedConfig.signal = signal;
 
-		if (!response.ok) {
-			const error = new NexiosError(response);
-			this.parseError(error);
+			// BUILD REQUEST
+			const { url, init } = new NexiosRequest(interceptedConfig);
+
+			// SEND REQUEST
+			const rawResponse = await fetch(url, init);
+			clearTimeout(timeoutId);
+
+			// BUILD RESPONSE
+			const response = new NexiosResponse<T>(rawResponse, interceptedConfig);
+			await response.resolveBody();
+
+			// HANDLE RESPONSE
+			if (!response.ok) {
+				let message = '';
+				if (interceptedConfig.transformErrorMsg)
+					message = interceptedConfig.transformErrorMsg(response);
+				throw new NexiosError(message, response);
+			}
+
+			// FINALIZE RESPONSE
+			return await this.runResponseInterceptors(response);
+		} catch (error) {
+			// INTERCEPT REQUEST ERROR
+			if (typeof error === 'string') throw new NexiosError(error);
+			// INTERCEPT RESPONSE ERROR
+			if (error instanceof NexiosError) {
+				const interceptedError = await this.runResponseInterceptors(
+					error.response as NexiosResponse,
+				);
+				error.response = interceptedError;
+			}
+
 			throw error;
 		}
-
-		return response;
 	}
 
-	async get<T = unknown>(url: string, config: NexiosOptions = {}): Promise<NexiosResponse<T>> {
-		return this.request<T>(url, { ...config, method: 'GET' });
+	async get<T = unknown>(url: string, config?: NexiosConfig): Promise<NexiosResponse<T>> {
+		return this.request<T>({ ...config, url, method: 'GET' });
 	}
 
 	async post<T = unknown>(
 		url: string,
-		data: object = {},
-		config: NexiosOptions = {},
+		data: any,
+		config?: NexiosConfig,
 	): Promise<NexiosResponse<T>> {
-		return this.request<T>(url, { ...config, method: 'POST', body: JSON.stringify(data) });
+		return this.request<T>({ ...config, url, method: 'POST', data });
 	}
 
 	async put<T = unknown>(
 		url: string,
-		data: object = {},
-		config: NexiosOptions = {},
+		data: any,
+		config?: NexiosConfig,
 	): Promise<NexiosResponse<T>> {
-		return this.request<T>(url, { ...config, method: 'PUT', body: JSON.stringify(data) });
+		return this.request<T>({ ...config, url, method: 'PUT', data });
 	}
 
 	async patch<T = unknown>(
 		url: string,
-		data: object = {},
-		config: NexiosOptions = {},
+		data: any,
+		config?: NexiosConfig,
 	): Promise<NexiosResponse<T>> {
-		return this.request<T>(url, { ...config, method: 'PATCH', body: JSON.stringify(data) });
+		return this.request<T>({ ...config, url, method: 'PATCH', data });
 	}
 
-	async delete<T = unknown>(url: string, config: NexiosOptions = {}): Promise<NexiosResponse<T>> {
-		return this.request<T>(url, { ...config, method: 'DELETE' });
+	async delete<T = unknown>(url: string, config?: NexiosConfig): Promise<NexiosResponse<T>> {
+		return this.request<T>({ ...config, url, method: 'DELETE' });
 	}
 
 	setAuthHeader(token: string, isBearer: boolean = true) {
-		this.headers = { ...this.headers, Authorization: isBearer ? `Bearer ${token}` : token };
+		this.defaults.headers?.set('Authorization', isBearer ? `Bearer ${token}` : token);
 	}
 
-	parseError(error: NexiosError) {
-		if (!error.data) error.message = error.statusMsg;
-		else if (typeof error.data === 'string') error.message = error.data;
-		else if (error.data.message) error.message = error.data.message;
-		else if (error.data.error) error.message = error.data.error;
-		else error.message = JSON.stringify(error.data);
+	/**
+	 * Called when a NexiosError is thrown due to a 400/500 response. Common patterns are checked to automatically assign the response's error details to error.message. Can be overridden directly or in the instance config to fit the error response pattern of the API this instance consumes.
+	 */
+	// transformErrorMsg<T>(response: NexiosResponse<T>): string {
+	// 	const data = response.data as any;
+
+	// 	if (typeof data === 'string') return data;
+	// 	else if (data?.message) return data.message;
+	// 	else if (data?.error) return data.error;
+	// 	else return JSON.stringify(data);
+	// }
+
+	private async runRequestInterceptors(config: NexiosConfig): Promise<NexiosConfig> {
+		let chainedConfig = config;
+
+		this.interceptors.request.foreach(async ({ onFulfilled, onRejected }) => {
+			if (onFulfilled) {
+				try {
+					chainedConfig = await onFulfilled(chainedConfig);
+				} catch (error) {
+					if (onRejected) {
+						error = await onRejected(error);
+					} else throw error;
+				}
+			}
+		});
+
+		return chainedConfig;
+	}
+
+	private async runResponseInterceptors<T>(
+		response: NexiosResponse<T>,
+	): Promise<NexiosResponse<T>> {
+		let chainedResponse = response;
+
+		this.interceptors.response.foreach(async ({ onFulfilled, onRejected }) => {
+			if (onFulfilled) {
+				try {
+					chainedResponse = (await onFulfilled(chainedResponse)) as NexiosResponse<T>;
+				} catch (error) {
+					if (onRejected) chainedResponse = await onRejected(error);
+					else throw error;
+				}
+			}
+		});
+
+		return chainedResponse;
+	}
+
+	private mergeConfig(config?: NexiosConfig): NexiosConfig {
+		return {
+			...this.defaults,
+			...config,
+			headers: new Headers({
+				...this.defaults.headers,
+				...config?.headers,
+			} as NexiosHeaders),
+		};
+	}
+
+	private startTimeout(timeout: number): { signal: AbortSignal; timeoutId: NodeJS.Timeout } {
+		const abortController = new AbortController();
+		const timeoutId = setTimeout(
+			() =>
+				abortController.abort(
+					`Request timed out after server failed to respond after ${timeout}ms`,
+				),
+			timeout,
+		);
+		timeoutId.unref(); // prevent leaks
+		return { signal: abortController.signal, timeoutId };
 	}
 }
 

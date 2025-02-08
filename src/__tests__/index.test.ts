@@ -1,154 +1,251 @@
-import Nexios, { defaultConfig, defaultHeaders } from '../index';
-import fetchMock from 'jest-fetch-mock';
-import { NexiosError, NexiosOptions, NexiosHeaders } from '../types';
+import Nexios, { defaultConfig } from '../index';
+import {
+	baseURL,
+	clearEndpointListeners,
+	resetUsers,
+	interceptRequest,
+	User,
+	users,
+} from './setup';
+import { NexiosConfig, NexiosHeaders } from '../interfaces';
+import NexiosError from '../NexiosError';
 
 describe('Nexios', () => {
-	const mockBaseURL = 'https://api.example.com';
 	let nexios: Nexios;
+	let mockPath = '';
+	let mockURL = '';
 
 	beforeEach(() => {
-		fetchMock.resetMocks();
-		nexios = new Nexios({ baseURL: mockBaseURL });
+		nexios = new Nexios({ baseURL });
 	});
 
-	describe('ctor', () => {
+	describe('Initialization', () => {
 		it('should initialize with default config', () => {
 			const nexios = new Nexios();
-			expect(nexios.baseURL).toBe('');
+			expect(nexios.defaults).toEqual(defaultConfig);
 		});
 
-		it('should override default baseUrl', () => {
-			const testUrl = 'https://test.com';
-			const nexios = new Nexios({ baseURL: testUrl });
-			expect(nexios.baseURL).toBe(testUrl);
+		it('should initialize with merged custom and default config', () => {
+			const headers = new Headers({ 'Content-Type': 'text/plain' });
+			nexios = new Nexios({ baseURL, cache: 'no-cache', headers });
+			expect(nexios.baseURL).toBe(baseURL);
+			expect(nexios.defaults.cache).toBe('no-cache');
+			expect(nexios.defaults.headers).toEqual(headers);
+			expect(nexios.defaults.withCredentials).toBe(true);
+			expect(nexios.defaults.headers?.get('Content-Type')).toBe('text/plain');
+		});
+
+		it('should set the Authorization header', async () => {
+			const token = 'NEW_TOKEN';
+			nexios.setAuthHeader(token);
+			expect(nexios.defaults.headers?.get('Authorization')).toBe(`Bearer ${token}`);
 		});
 	});
 
 	describe('HTTP Methods', () => {
-		const mockResponse = { data: 'test' };
-		let mockPath = '/users';
-		let mockURL = `${mockBaseURL}${mockPath}`;
-		const headers: NexiosHeaders = { ...defaultHeaders, Authorization: 'Bearer TOKEN' };
-		const customConfig: NexiosOptions = { ...defaultConfig, method: 'OPTIONS', headers };
-
 		beforeEach(() => {
-			fetchMock.mockResponse(JSON.stringify(mockResponse), {
-				headers: { 'Content-Type': 'application/json' },
-			});
+			resetUsers();
+			mockPath = '/users';
+			mockURL = `${baseURL}${mockPath}`;
 		});
 
+		afterEach(() => {
+			clearEndpointListeners();
+		});
+
+		const headers: NexiosHeaders = { Authorization: 'Bearer TOKEN' } as NexiosHeaders;
+		const customConfig: NexiosConfig = { method: 'OPTIONS', headers };
+
+		//////////////////////////// GET ///////////////////////////////////
 		it('should make a GET request with custom config', async () => {
-			const response = await nexios.get(mockPath, customConfig);
+			const path = '/users';
+			const url = baseURL + path;
 
-			expect(fetchMock).toHaveBeenCalledWith(
-				mockURL,
-				expect.objectContaining({ ...customConfig, method: 'GET' }),
-			);
-			expect(response.data).toEqual(mockResponse);
+			interceptRequest((request) => {
+				expect(request.url).toBe(url);
+				expect(request.method).toBe('GET');
+				expect(request.headers.get('Authorization')).toBe('Bearer TOKEN');
+			});
+
+			const response = await nexios.get('/users', customConfig);
+			expect(response.data).toEqual({ users });
 		});
 
-		it('should make a custom GET request with query params', async () => {
-			const params = { type: 'broad', amount: 10 };
-
-			const response = await nexios.request(mockPath, { params, method: 'GET' });
-
+		it('should make a custom GET request with query params in headers', async () => {
+			const params = { type: 'broad', amount: '10' };
 			const assembledUrl = new URL(mockURL);
-			Object.entries(params).forEach(([k, v]) => assembledUrl.searchParams.append(k, v.toString()));
+			assembledUrl.search = new URLSearchParams(params).toString();
 
-			expect(fetchMock).toHaveBeenCalledWith(
-				assembledUrl.toString(),
-				expect.objectContaining({ method: 'GET' }),
-			);
-			expect(response.data).toEqual(mockResponse);
-		});
+			interceptRequest((request) => {
+				expect(request.url).toBe(assembledUrl.toString());
+				expect(request.method).toBe('GET');
+				expect(request.headers.get('Authorization')).toBe('Bearer TOKEN');
+			});
 
-		const mockData = { username: 'Michael Scotch' };
-
-		it('should make a POST request with custom config', async () => {
-			const response = await nexios.post(mockPath, mockData, customConfig);
-			expect(fetchMock).toHaveBeenCalledWith(
-				mockURL,
-				expect.objectContaining({
-					...customConfig,
-					method: 'POST',
-					body: JSON.stringify(mockData),
-				}),
-			);
-			expect(response.data).toEqual(mockResponse);
+			const response = await nexios.request({
+				...customConfig,
+				url: mockPath,
+				params,
+				method: 'GET',
+			});
 			expect(response.status).toBe(200);
+			expect(response.data).toEqual({ users });
 		});
 
-		mockPath += '/1';
-		mockURL += '/1';
+		//////////////////////////// POST ///////////////////////////////////
+		it('should make a POST request with custom config', async () => {
+			const newUser = { username: 'Michael Scotch', email: 'michael@scotch.com' };
 
+			interceptRequest(async (request) => {
+				expect(request.url).toBe(mockURL);
+				expect(request.method).toBe('POST');
+				expect(await request.json()).toEqual(newUser);
+				expect(request.headers.get('Authorization')).toBe('Bearer TOKEN');
+			});
+
+			const response = await nexios.post(mockPath, newUser, customConfig);
+
+			expect(response.status).toBe(201);
+			expect(response.data).toEqual({ ...newUser, id: 5 });
+		});
 		it('should make a PUT request with custom config', async () => {
-			const response = await nexios.put(mockPath, mockData, customConfig);
-			expect(fetchMock).toHaveBeenCalledWith(
-				mockURL,
-				expect.objectContaining({ ...customConfig, body: JSON.stringify(mockData), method: 'PUT' }),
-			);
-			expect(response.data).toEqual(mockResponse);
+			mockPath += '/1';
+			mockURL += '/1';
+			const updatedUserData: User = { id: 1, username: 'Bob', email: 'Ross' };
+
+			interceptRequest(async (request) => {
+				expect(request.url).toBe(mockURL);
+				expect(request.method).toBe('PUT');
+				expect(await request.json()).toEqual(updatedUserData);
+				expect(request.headers.get('Authorization')).toBe('Bearer TOKEN');
+			});
+
+			const response = await nexios.put(mockPath, updatedUserData, customConfig);
+
+			expect(response.data).toEqual(updatedUserData);
 			expect(response.status).toBe(200);
 		});
 
 		it('should make a PATCH request with custom config', async () => {
-			const response = await nexios.patch(mockPath, mockData, customConfig);
-			expect(fetchMock).toHaveBeenCalledWith(
-				mockURL,
-				expect.objectContaining({
-					...customConfig,
-					body: JSON.stringify(mockData),
-					method: 'PATCH',
-				}),
-			);
-			expect(response.data).toEqual(mockResponse);
+			mockPath += '/1';
+			mockURL += '/1';
+			const updateField = { email: 'test@test.com' };
+
+			interceptRequest(async (request) => {
+				expect(request.url).toBe(mockURL);
+				expect(request.method).toBe('PATCH');
+				expect(await request.json()).toEqual(updateField);
+				expect(request.headers.get('Authorization')).toBe('Bearer TOKEN');
+			});
+
+			const response = await nexios.patch(mockPath, updateField, customConfig);
+			expect(response.data).toEqual({
+				id: 1,
+				username: 'userOne',
+				email: updateField.email,
+			} as User);
 			expect(response.status).toBe(200);
 		});
 
 		it('should make a DELETE request with custom config', async () => {
+			mockPath += '/1';
+			mockURL += '/1';
 			const response = await nexios.delete(mockPath, customConfig);
-			expect(fetchMock).toHaveBeenCalledWith(
-				mockURL,
-				expect.objectContaining({
-					...customConfig,
-					method: 'DELETE',
-				}),
-			);
-			expect(response.status).toBe(200);
+
+			interceptRequest(async (request) => {
+				expect(request.url).toBe(mockURL);
+				expect(request.method).toBe('DELETE');
+				expect(request.headers.get('Authorization')).toBe('Bearer TOKEN');
+			});
+
+			expect(response.status).toBe(204);
+			expect(response.data).toBe(null);
 		});
 	});
 
 	describe('Error Handling', () => {
-		it('should throw NexiosError for non-200 responses', async () => {
-			// setup mock response
-			const errorResponse = { message: '404 NOT FOUND' };
-			fetchMock.mockResponseOnce(JSON.stringify(errorResponse), {
-				status: 404,
-				headers: { 'Content-Type': 'application/json' },
-			});
-
-			await expect(nexios.get('/nonexistent')).rejects.toThrow('404 NOT FOUND');
+		it('should timeout after 2 seconds', async () => {
+			await expect(nexios.get('/timeout', { timeout: 2000 })).rejects.toThrow(
+				'Request timed out after server failed to respond after 2000ms',
+			);
 		});
 
-		it('should include error data in thrown NexiosError', async () => {
-			// setup mock response
-			const errorResponse = {
-				message: 'Validation Error',
-				errors: ['Invalid input'],
-			};
-			fetchMock.mockResponseOnce(JSON.stringify(errorResponse), {
-				status: 400,
-				headers: { 'Content-Type': 'application/json' },
+		it('should throw a NexiosError for 404 responses', async () => {
+			try {
+				await nexios.get('/nonexistent');
+			} catch (error) {
+				expect(error).toBeInstanceOf(NexiosError);
+				if (error instanceof NexiosError) {
+					expect(error.status).toBe(404);
+					expect(error.statusMsg).toBe('404 NOT FOUND');
+					expect(error.message).toBe('404 Not Found');
+				}
+			}
+		});
+
+		it('should throw a NexiosError for 500 responses', async () => {
+			try {
+				await nexios.get('/error');
+			} catch (error) {
+				expect(error).toBeInstanceOf(NexiosError);
+				if (error instanceof NexiosError) {
+					expect(error.status).toBe(500);
+					expect(error.statusMsg).toBe('500 INTERNAL SERVER ERROR');
+					expect(error.message).toBe('500 Internal Server Error');
+				}
+			}
+		});
+
+		it('should extract error response message as string', async () => {
+			try {
+				await nexios.get('/error/string');
+			} catch (error) {
+				expect(error).toBeInstanceOf(NexiosError);
+				if (error instanceof NexiosError) {
+					expect(error.message).toBe('500 Internal Server Error');
+					expect(error.data).toBe('500 Internal Server Error');
+				}
+			}
+		});
+
+		it('should extract error response message from message property', async () => {
+			try {
+				await nexios.get('/error/message');
+			} catch (error) {
+				expect(error).toBeInstanceOf(NexiosError);
+				if (error instanceof NexiosError) {
+					expect(error.message).toBe('500 Internal Server Error');
+					expect(error.data.message).toBe('500 Internal Server Error');
+				}
+			}
+		});
+
+		it('should extract error response message from error property', async () => {
+			try {
+				await nexios.get('/error/error');
+			} catch (error) {
+				expect(error).toBeInstanceOf(NexiosError);
+				if (error instanceof NexiosError) {
+					expect(error.message).toBe('500 Internal Server Error');
+					expect(error.data.error).toBe('500 Internal Server Error');
+				}
+			}
+		});
+
+		it('should extract error response message from custom extractor', async () => {
+			nexios = new Nexios({
+				baseURL,
+				transformErrorMsg: (response) => (response.data as any)?.error.msg as string,
 			});
 
 			try {
-				await nexios.post('/users', {});
+				await nexios.get('/error/object');
 			} catch (error) {
+				expect(error).toBeInstanceOf(NexiosError);
 				if (error instanceof NexiosError) {
-					expect(error.status).toBe(400);
-					expect(error.data).toEqual(errorResponse);
-				} else {
-					fail(error);
+					expect(error.message).toBe('500 Internal Server Error');
+					expect(error.data.error.code).toBe(500);
+					expect(error.data.error.msg).toBe('500 Internal Server Error');
 				}
 			}
 		});
