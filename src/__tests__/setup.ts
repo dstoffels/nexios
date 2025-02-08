@@ -32,7 +32,7 @@ export const getUserIndex = (userId: number | string): number => {
 	return i;
 };
 
-const server = setupServer(
+export const server = setupServer(
 	// READ (all)
 
 	http.get(`${baseURL}/users`, ({ request }) => {
@@ -91,6 +91,32 @@ const server = setupServer(
 			let i = getUserIndex(id as string);
 			users.splice(i, 1);
 			return new HttpResponse(null, { status: 204 });
+		} catch (error) {
+			return HttpResponse.json({ error: (error as Error).message }, { status: 400 });
+		}
+	}),
+
+	http.get(`${baseURL}/response-test/:type`, ({ request, params }) => {
+		try {
+			const { type } = params;
+			switch (type) {
+				case 'json':
+					return HttpResponse.json({ message: 'Hello, World!' });
+				case 'xml':
+					return HttpResponse.xml('<message>Hello, World!</message>');
+				case 'text':
+					return HttpResponse.text('Hello, World!');
+				case 'formdata':
+					const formData = new FormData();
+					formData.append('key', 'value');
+					return HttpResponse.formData(formData);
+				case 'arraybuffer':
+					return HttpResponse.arrayBuffer(new ArrayBuffer(8));
+				case 'blob':
+					return new HttpResponse(new Blob(['%PDF-1.4...'], { type: 'application/pdf' }), {
+						headers: { 'Content-Type': 'application/pdf' },
+					});
+			}
 		} catch (error) {
 			return HttpResponse.json({ error: (error as Error).message }, { status: 400 });
 		}

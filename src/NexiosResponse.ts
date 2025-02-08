@@ -36,32 +36,37 @@ export default class NexiosResponse<T = unknown> {
 	async resolveBody() {
 		const contentType = this.headers.get('Content-Type') as ContentType;
 
+		if (!contentType) return;
+
 		try {
 			const response = this.raw.clone();
 
-			switch (contentType) {
-				case 'application/json':
-				case 'application/xml':
+			switch (true) {
+				case contentType.startsWith('application/json'):
 					this.data = (await response.json()) as T;
 					break;
-				case 'application/octet-stream':
-				case 'image/jpeg':
-				case 'image/png':
-				case 'image/webp':
-				case 'audio/mpeg':
-				case 'audio/ogg':
-				case 'video/mp4':
-				case 'video/webm':
-					this.data = (await response.blob()) as T;
+				case contentType.startsWith('application/x-www-form-urlencoded'):
+				case contentType.startsWith('text/xml'):
+				case contentType.startsWith('application/xml'):
+				case contentType.startsWith('text/html'):
+				case contentType.startsWith('text/plain'):
+					this.data = (await response.text()) as T;
 					break;
-				case 'application/pdf':
-				case 'multipart/form-data':
-				case 'application/x-www-form-urlencoded':
+				case contentType.startsWith('multipart/form-data'):
+					this.data = (await response.formData()) as T;
+					break;
+				case contentType.startsWith('application/octet-stream'):
 					this.data = (await response.arrayBuffer()) as T;
 					break;
-				case 'text/html':
-				case 'text/plain':
-					this.data = (await response.text()) as T;
+				case contentType.startsWith('application/pdf'):
+				case contentType.startsWith('image/jpeg'):
+				case contentType.startsWith('image/png'):
+				case contentType.startsWith('image/webp'):
+				case contentType.startsWith('audio/mpeg'):
+				case contentType.startsWith('audio/ogg'):
+				case contentType.startsWith('video/mp4'):
+				case contentType.startsWith('video/webm'):
+					this.data = (await response.blob()) as T;
 					break;
 				default:
 					this.data = null;
