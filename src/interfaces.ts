@@ -1,4 +1,3 @@
-import { Agent } from 'http';
 import { RequestMethod, Params, ResponseEncoding, ContentType, ResponseType } from './types';
 import NexiosResponse from './NexiosResponse';
 

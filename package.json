@@ -5,8 +5,8 @@
 	"main": "dist/index.js",
 	"scripts": {
 		"build": "tsc",
-		"test": "jest --watch --detectOpenHandles",
-		"test:watch": "jest --watch --detectOpenHandles",
+		"test": "jest",
+		"dev": "jest --watch --detectOpenHandles",
 		"test:coverage": "jest --coverage --detectOpenHandles"
 	},
 	"repository": {
