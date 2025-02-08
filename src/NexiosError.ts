@@ -9,6 +9,7 @@ export default class NexiosError extends Error {
 
 	constructor(message: string, response?: NexiosResponse) {
 		super(message);
+		this.name = 'NexiosError';
 		this.response = response;
 		this.isResponseError = Boolean(response);
 		this.status = response?.status;

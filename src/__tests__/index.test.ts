@@ -239,8 +239,7 @@ describe('Nexios', () => {
 			});
 
 			try {
-				(nexios.transformErrorMsg = (response) => (response.data as any)?.error.msg as string),
-					await nexios.get('/error/object');
+				await nexios.get('/error/object');
 			} catch (error) {
 				expect(error).toBeInstanceOf(NexiosError);
 				if (error instanceof NexiosError) {

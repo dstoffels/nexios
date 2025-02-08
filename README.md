@@ -1,6 +1,6 @@
 # Nexios: an Axios clone for Next.js
 
-Nexios is a simple `fetch` wrapper designed to provide a more robust API for making HTTP requests. It mimics the behavior of `axios` but is designed for server-side integration with [Next.js](https://nextjs.org/).
+Nexios is a simple `fetch` wrapper designed to provide a more robust interface for making HTTP requests. It mimics the behavior of `axios` but is designed for server-side integration with [Next.js](https://nextjs.org/).
 
 ## Installation
 
@@ -31,26 +31,25 @@ export default nexios;
 `NexiosConfig` is largely used as the default options for all requests made from this instance. Setting `baseURL` allows you to prefix every request's url with a web API's domain. 
 
 ```typescript
-// examples of the default configurations that Nexios uses
-const defaultHeaders: NexiosHeaders = {
-	'Content-Type': 'application/json',
-	Accept: 'application/json',
-};
-
-const defaultConfig: NexiosConfig = {
+// The default nexios config (same as Axios)
+export const defaultConfig: NexiosConfig = {
+	method: 'GET',
 	baseURL: '',
-	headers: defaultHeaders,
-	credentials: 'include',
+	bypassBaseURL: false,
+	timeout: 1000,
+	withCredentials: true,
 	cache: 'force-cache',
-	timeout: 10000,
+	headers: new Headers({ 'Content-Type': 'application/json' } as NexiosHeaders),
+	responseType: 'json',
+	xsrfCookieName: 'XSRF-TOKEN',
+	xsrfHeaderName: 'X-XSRF-TOKEN',
 };
 ```
-> Next.js has gone back and forth on the default cache option, Next 15 now defaults to `no-store`, where older versions use `force-cache`. For now we will stick with `force-cache` until users object.
 
-
+> Next.js has gone back and forth on the default cache option, Next 15 now defaults to `no-store`, where older versions use `force-cache`. For now we'll stick with `force-cache` until users object.
 
 ### Creating a nexios instance with a custom configuration
-We can also override the default nexios configuration. Subsequent usage examples will use the following nexios instance, which defines `baseURL` to simplify request paths. Sometimes it makes sense to have multiple instances for different scenarios (client-side, server-side, authentication stages vs authorized requests, etc), custom configs make it easy to setup an instance for its specific role.
+We can also override the default nexios config. Subsequent examples will use the following nexios instance, which defines `baseURL` to simplify request paths. Sometimes it makes sense to have multiple instances for different scenarios (client-side, server-side, authentication stages vs authorized requests, etc), custom configs make it easy to setup an instance for its specific role.
 
 ```typescript
 // nexios.ts
@@ -60,13 +59,10 @@ import Nexios from 'nexios';
 const nexios = new Nexios({
   baseURL: 'https://api.example.com',
   cache: 'no-store', 
-  headers: {
-    Authorization: 'Bearer TOKEN' 
-  }
+  headers: new Headers({ Authorization: 'Bearer TOKEN' });
 })
 
 nexios.setAuthHeader("NEW_TOKEN", true)
-
 // result: Authorization: 'Bearer NEW_TOKEN'
 ```
 > In this example, we create an instance with a custom baseURL (https://api.example.com), which will be prefixed to all requests made from this instance.
@@ -76,7 +72,7 @@ nexios.setAuthHeader("NEW_TOKEN", true)
 > We also assign a bearer token to the Authorization header for making authed requests for the user. If the token is refreshed, the nexios API allows us to easily update the header using the `setAuthHeader()` method on the fly.
 
 ## Making Requests
-The nexios API has methods for the five primary request types (`get`, `post`, `put`, `patch`, `delete`) and a default `request` method for fringe cases like HEAD or OPTIONS requests.
+The nexios API has methods for the five primary request types (`get`, `post`, `put`, `patch`, `delete`) and a default `request` method for other request methods like HEAD or OPTIONS.
 
 ### Fetching Data
 Import your instance for use within Next's server actions to encapsulate request logic and error handling. You can optionally pass custom request options to override the instance config for this particular request.
@@ -153,35 +149,37 @@ export default async function LoginPage() {
 
 
 ## Error Handling
-### `parseError()`
-Nexios' default `parseError` method attempts to extract a detailed error message using common error response patterns directly to the error's message property. Since every web API responds with a different data structure, you can override this to fit the API you're consuming with this instance. This way you'll always have easy access to the error message for more graceful error handling.
+### `transformErrorMsg()`
+Nexios' default `transformErrorMsg` method attempts to extract a detailed error message using common error response patterns directly to the error's message property. Since every web API responds with a different 400/500 data structure, you can override this to fit the API you're consuming with this instance, making for more streamlined error handling.
 
 ```typescript
 // the default parseError method
-parseError(error: NexiosError) {
-		if (!error.data) error.message = error.statusMsg;
-		else if (typeof error.data === 'string') error.message = error.data;
-		else if (error.data.message) error.message = error.data.message;
-		else if (error.data.error) error.message = error.data.error;
-		else error.message = JSON.stringify(error.data);
+transformErrorMsg = (response: NexiosResponse): string => {
+		const data = response.data as any;
+
+		if (typeof data === 'string') return data;
+		else if (data?.message) return data.message;
+		else if (data?.error) return data.error;
+		else return "An unknown error occurred" // failover, couldn't extract the message from the response
 	}
 ```
 
-`parseError` can be overridden at instantiation using the config object or later on the instance by reassignment.
+> The default `transformErrorMsg()` is automatically called on non-ok responses (400/500 status) and its return is assigned to a NexiosError message property.
 
 ```typescript
 // nexios.ts
 import Nexios from 'nexios';
 
-// example: config override
+// example: instance config override
 const nexios = new Nexios({
   baseURL: 'https://api.example.com',
-  parseError: (error: NexiosError) => error.data.error_message; 
+  transformErrorMsg: (response: NexiosResponse) => response.data.error_message; 
 })
 
-// example: direct instance override
-nexios.parseError = (error: NexiosError) => error.data.error_msg;
+// example: request config override
+const response = await nexios.get('/items', {transformErrorMsg: (response: NexiosResponse) => response.data.error.msg; })
 ```
+> `transformErrorMsg` can be overridden in the config as an instance default, or it can be temporarily overridden in the request config.
 
 ### Handling Error Messages
 A detailed error message from the response can then be used to conditionally create a more seamless user experience.
@@ -227,32 +225,69 @@ export default async function UserPage() {
 ```
 > In the page that consumes this action, we destructure the `user` and `errorMsg` from the return and conditionally render each. The heading will not render if `user` is null, and the error message will not render if `errorMsg` is empty. A simple example of a more immersive user experience in the event the user could not be fetched.
 
+## Interceptors
+Interceptors are a great way of injecting headers into a request or extracting headers like refresh tokens from a response--a perfect solution for handling auth cookies.
+
+```typescript
+// example: Add a request interceptor
+nexios.interceptors.request.use((config) => {
+
+  // extract the cookie
+  const token = cookies().get('access')?.value;
+
+  // assign the cookie to the auth header on the request's way to the API.
+  if (token)
+    config.headers.set('Authorization', 'Bearer ' + token);
+
+  return config;
+});
+
+
+// example: Add a response interceptor
+nexios.interceptors.response.use((response) => {
+  // destructure the auth token from the response body
+  const { access_token } = response.data;
+
+  // assign the token to access cookie on the response's way to the server/client.
+  cookies().set('access', token);
+
+  return response;
+})
+```
+
+> **Note**: `cookies()` is part of next.js.
+
 ## API
 ### Properties
-- **baseURL**: Stores a string prefixed to the url of every request sent, typically the domain and api path ("https://exampledomain.com/api"). Assigned in the config object of the constructor, can be reassigned directly.
-- **headers**: A `NexiosHeaders` object that's sent along with the headers option of every fetch request.
-- **cache**: (string) Controls how the server caches the response from requests made from this instance.
-- **credentials**: (string) An option to control when credentials are sent with requests made from this instance.
-- **timeout**: (number) *unimplemented*
+- **defaults**: A merged NexiosConfig object from the defaultConfig and the custom config assigned at instantiation.
+- **baseURL** (getter): Returns defaults.baseURL, which was assigned at instantiation.
 
 ### Constructor
 - **config**: A **`NexiosConfig`** object which defaults to `defaultConfig` (defaultConfig is exported from the package)
 
 ### Methods
 The API primarily exposes request methods that call `fetch()`. In TypeScript, you can pass a type argument to each request method for type-safing the Response data.
-- **`request(url: string, options?: NexiosOptions)`**: The highest-level wrapper for `fetch`, called by all other request methods in the API. Can be used to make other/custom request types aside from the main 5. 
-- **`get(url: string, options?: NexiosOptions)`**: Sends a GET request by calling `request()`.
-- **`post(url: string, data: object, options?: NexiosOptions)`**: Sends a POST request by calling `request()`.
-- **`put(url: string, data: object, options?: NexiosOptions)`**: Sends a PUT request by calling `request()`.
-- **`patch(url: string, data: object, options?: NexiosOptions)`**: Sends a PATCH request by calling `request()`.
-- **`delete(url: string, options?: NexiosOptions)`**: Sends a DELETE request by calling `request()`.
+- **`request(config?: NexiosConfig)`**: The highest-level wrapper for `fetch`, called by all other request methods in the interface. Can be used to make other request types aside from the main 5. 
+- **`get(url: string, config?: NexiosConfig)`**: Sends a GET request by calling `request()`.
+- **`post(url: string, data: any, config?: NexiosConfig)`**: Sends a POST request by calling `request()`.
+- **`put(url: string, data: any, config?: NexiosConfig)`**: Sends a PUT request by calling `request()`.
+- **`patch(url: string, data: any, config?: NexiosConfig)`**: Sends a PATCH request by calling `request()`.
+- **`delete(url: string, config?: NexiosConfig)`**: Sends a DELETE request by calling `request()`.
 - **`setAuthHeader`**: If you choose to store tokens like JWTs within your instance, the `setAuthHeader` allows you to easily assign the token to the Authorization header of all requests from this instance.
 
 ### Types
-#### `NexiosResponse`
-`NexiosResponse` extends `Response`, automatically deserializing the json of the response when generated.
 
-##### API
+#### `NexiosRequest`
+A Request DTO that prepares the incoming config object as the init argument of `fetch`.
+##### Interface
+- **url**: The final URL string assembled from baseURL, request url and searchParams.
+- **config**: The final NexiosConfig object, which is updated to prepare to be sent as the `init` argument of `fetch()`.
+- **init** (getter): returns the prepared config object.
+
+#### `NexiosResponse`
+A Response DTO that resolves the response's body in to its data property.
+
+##### Interface
 - **data**: The deserialized body from the raw Response.
 - **response**: The raw Response object from `fetch`.
 
@@ -265,38 +300,90 @@ The API primarily exposes request methods that call `fetch()`. In TypeScript, yo
 - **statusMsg**: The long status message of the response (400 BAD REQUEST, 500 INTERNAL SERVER ERROR, 404 NOT FOUND...).
 - **data**: The deserialized body from the raw Response.
 - **message**: The detailed error message returned in the response, assigned with Nexios' `parseError`
+- **isResponseError**: Flags whether the error contains a response object.
 
 ### Interfaces
 #### `NexiosConfig`
 ```typescript
-interface NexiosConfig {
-	baseURL?: string;
-	headers?: NexiosHeaders;
-	credentials?: CredentialsOptions;
-	timeout?: number;
-	cache?: CacheOptions;
-	parseError?: (error: NexiosError) => string;
-}
-```
+// The current state of NexiosConfig with upcoming features commented out.
+export interface NexiosConfig extends RequestInit {
+	// Nexios Config
+	/** Next.js options
+	 * @param revalidate
+	 * @param tags
+	 */
+	next?: {
+		revalidate?: false | 0 | number;
+		tags?: string[];
+	};
 
-#### `NexiosOptions`
-```typescript
-interface NexiosOptions {
-	body?: any;
-	method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | (string & {});
+	/** An override for the default Nexios Error transformer  */
+	transformErrorMsg?: <T>(response: NexiosResponse<T>) => string;
+
+	// Standard Axios Config (unimplemented features commented out)
+	url?: string;
+	method?: RequestMethod;
+	baseURL?: string;
+	bypassBaseURL?: boolean;
+	// transformRequest?: Array<(data: any, headers: NexiosHeaders) => any>;
+	// transformResponse?: Array<(data: any) => any>;
 	headers?: NexiosHeaders;
-	params?: Record<string, string | number>;
-	cache?: CacheOptions;
+	params?: Params;
+	paramsSerializer?: (params?: Params) => string;
+	data?: any;
 	timeout?: number;
+	/** Overrides credentials property with 'includes' when true */
+	withCredentials?: boolean;
+	auth?: {
+		username: string;
+		password: string;
+	};
+	responseType?: ResponseType;
+	// responseEncoding?: ResponseEncoding;
+	xsrfCookieName?: string;
+	xsrfHeaderName?: string;
+	// onUploadProgress?: (progressEvent: ProgressEvent) => void;
+	// onDownloadProgress?: (progressEvent: ProgressEvent) => void;
+	// maxContentLength?: number;
+	// maxBodyLength?: number;
+	// validateStatus?: (status: number) => boolean;
+	// maxRedirects?: number;
+	// socketPath?: string | null;
+	// httpAgent?: Agent;
+	// httpsAgent?: Agent;
+	// proxy?: {
+	// 	protocol?: string;
+	// 	host?: string;
+	// 	port?: number;
+	// 	auth?: {
+	// 		username: string;
+	// 		password: string;
+	// 	};
+	// };
+	signal?: AbortSignal;
+
+	/** Tells Nexios to automatically decompress the response body. */
+	// decompress?: boolean;
 }
 ```
 
 #### `NexiosHeaders`
 ```typescript
-interface NexiosHeaders {
-	Authorization?: string;
-	Accept?: ContentTypes;
-	'Content-Type'?: ContentTypes;
+export interface NexiosHeaders extends Headers {
+	Accept?: ContentType;
+	'Content-Length'?: ContentType;
 	'User-Agent'?: string;
+	'Content-Encoding'?: ResponseEncoding;
+	'Content-Type'?: ContentType;
+	Authorization?: string;
+	Cookie?: string | string[];
+}
+```
+
+#### `Interceptor`
+```typescript
+export interface Interceptor<T> {
+	onFulfilled?: (value: T) => T | Promise<T>;
+	onRejected?: (error: any) => any;
 }
 ```

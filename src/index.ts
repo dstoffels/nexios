@@ -25,6 +25,14 @@ export const defaultConfig: NexiosConfig = {
 	// maxRedirects: 5,
 	// socketPath: null,
 	// decompress: true,
+	transformErrorMsg: (response: NexiosResponse): string => {
+		const data = response.data as any;
+
+		if (typeof data === 'string') return data;
+		else if (data?.message) return data.message;
+		else if (data?.error) return data.error;
+		else return 'An unknown error occurred';
+	},
 };
 
 /**
@@ -45,7 +53,7 @@ class Nexios {
 	constructor(config?: NexiosConfig) {
 		const mergedDefaults = { ...defaultConfig, ...config };
 		this.defaults = mergedDefaults;
-		this.transformErrorMsg = config?.transformErrorMsg || this.transformErrorMsg;
+		// this.transformErrorMsg = config?.transformErrorMsg || this.transformErrorMsg;
 		this.interceptors = {
 			request: new InterceptorManager<NexiosConfig>(),
 			response: new InterceptorManager<NexiosResponse>(),
@@ -74,7 +82,12 @@ class Nexios {
 			await response.resolveBody();
 
 			// HANDLE RESPONSE
-			if (!response.ok) throw new NexiosError(this.transformErrorMsg<T>(response), response);
+			if (!response.ok) {
+				let message = '';
+				if (interceptedConfig.transformErrorMsg)
+					message = interceptedConfig.transformErrorMsg(response);
+				throw new NexiosError(message, response);
+			}
 
 			// FINALIZE RESPONSE
 			return await this.runResponseInterceptors(response);
@@ -132,14 +145,14 @@ class Nexios {
 	/**
 	 * Called when a NexiosError is thrown due to a 400/500 response. Common patterns are checked to automatically assign the response's error details to error.message. Can be overridden directly or in the instance config to fit the error response pattern of the API this instance consumes.
 	 */
-	transformErrorMsg<T>(response: NexiosResponse<T>): string {
-		const data = response.data as any;
+	// transformErrorMsg<T>(response: NexiosResponse<T>): string {
+	// 	const data = response.data as any;
 
-		if (typeof data === 'string') return data;
-		else if (data?.message) return data.message;
-		else if (data?.error) return data.error;
-		else return JSON.stringify(data);
-	}
+	// 	if (typeof data === 'string') return data;
+	// 	else if (data?.message) return data.message;
+	// 	else if (data?.error) return data.error;
+	// 	else return JSON.stringify(data);
+	// }
 
 	private async runRequestInterceptors(config: NexiosConfig): Promise<NexiosConfig> {
 		let chainedConfig = config;
