@@ -10,15 +10,21 @@ describe('NexiosResponse', () => {
 		expect(await response.json()).toEqual(response.data);
 	});
 
+	it('should resolve a text body', async () => {
+		const response = await nexios.get('/response-test/text');
+		expect(response.data).toBe('Hello, World!');
+		expect(await response.text()).toEqual(response.data);
+	});
+
 	it('should resolve an xml body', async () => {
 		const response = await nexios.get('/response-test/xml');
 		expect(response.data).toEqual('<message>Hello, World!</message>');
 		expect(await response.text()).toEqual(response.data);
 	});
 
-	it('should resolve a text body', async () => {
-		const response = await nexios.get('/response-test/text');
-		expect(response.data).toBe('Hello, World!');
+	it('should resolve an html body', async () => {
+		const response = await nexios.get('/response-test/html');
+		expect(response.data).toEqual('<h1>Hello, World!</h1>');
 		expect(await response.text()).toEqual(response.data);
 	});
 

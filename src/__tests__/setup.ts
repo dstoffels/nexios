@@ -33,8 +33,11 @@ export const getUserIndex = (userId: number | string): number => {
 };
 
 export const server = setupServer(
-	// READ (all)
+	http.get(`${baseURL}`, ({ params }) => {
+		return HttpResponse.html('<h1>Welcome to the API</h1>');
+	}),
 
+	// READ (all)
 	http.get(`${baseURL}/users`, ({ request }) => {
 		try {
 			return HttpResponse.json({
@@ -102,10 +105,12 @@ export const server = setupServer(
 			switch (type) {
 				case 'json':
 					return HttpResponse.json({ message: 'Hello, World!' });
-				case 'xml':
-					return HttpResponse.xml('<message>Hello, World!</message>');
 				case 'text':
 					return HttpResponse.text('Hello, World!');
+				case 'html':
+					return HttpResponse.html('<h1>Hello, World!</h1>');
+				case 'xml':
+					return HttpResponse.xml('<message>Hello, World!</message>');
 				case 'formdata':
 					const formData = new FormData();
 					formData.append('key', 'value');
@@ -120,6 +125,27 @@ export const server = setupServer(
 		} catch (error) {
 			return HttpResponse.json({ error: (error as Error).message }, { status: 400 });
 		}
+	}),
+
+	//////////////////////////// ERROR HANDLING ////////////////////////////
+	http.get(`${baseURL}/timeout`, async ({ request }) => {
+		return new Promise((resolve) => {
+			setTimeout(() => {
+				resolve(HttpResponse.json('This request takes 5 seconds.'));
+			}, 3000);
+		});
+	}),
+
+	http.get(`${baseURL}/error`, ({ request }) => {
+		return HttpResponse.json({ error: '500 Internal Server Error' }, { status: 500 });
+	}),
+
+	http.get('https://otherapi.com', ({ request }) => {
+		return HttpResponse.json('This is a response from another API.');
+	}),
+
+	http.all('*', ({ request }) => {
+		return HttpResponse.json({ error: '404 Not Found' }, { status: 404 });
 	}),
 );
 

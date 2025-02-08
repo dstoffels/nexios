@@ -4,9 +4,13 @@ import NexiosResponse from './NexiosResponse';
 
 export interface NexiosConfig extends RequestInit {
 	// Nexios Config
+	/** Next.js options
+	 * @param revalidate
+	 * @param tags
+	 */
 	next?: {
 		revalidate?: false | 0 | number;
-		targs?: string[];
+		tags?: string[];
 	};
 
 	/** An override for the default Nexios Error transformer  */
@@ -24,7 +28,8 @@ export interface NexiosConfig extends RequestInit {
 	paramsSerializer?: (params?: Params) => string;
 	data?: any;
 	timeout?: number;
-	// withCredentials?: boolean;
+	/** Overrides credentials property with 'includes' when true */
+	withCredentials?: boolean;
 	auth?: {
 		username: string;
 		password: string;
@@ -51,7 +56,7 @@ export interface NexiosConfig extends RequestInit {
 	// 		password: string;
 	// 	};
 	// };
-	// signal?: AbortSignal;
+	signal?: AbortSignal;
 
 	/** Tells Nexios to automatically decompress the response body. */
 	// decompress?: boolean;

@@ -10,6 +10,7 @@ import {
 import { NexiosConfig, NexiosHeaders } from '../interfaces';
 import NexiosError from '../NexiosError';
 import NexiosRequest from '../NexiosRequest';
+import exp from 'constants';
 
 describe('Nexios', () => {
 	let nexios: Nexios;
@@ -151,41 +152,38 @@ describe('Nexios', () => {
 			expect(response.data).toBe(null);
 		});
 	});
+
+	describe('Error Handling', () => {
+		it('should timeout after 2 seconds', async () => {
+			await expect(nexios.get('/timeout', { timeout: 2000 })).rejects.toThrow(
+				'Request timed out after server failed to respond after 2000ms',
+			);
+		});
+
+		it('should throw a NexiosError for 404 responses', async () => {
+			try {
+				await nexios.get('/nonexistent');
+			} catch (error) {
+				expect(error).toBeInstanceOf(NexiosError);
+				if (error instanceof NexiosError) {
+					expect(error.status).toBe(404);
+					expect(error.statusMsg).toBe('404 NOT FOUND');
+					expect(error.message).toBe('404 Not Found');
+				}
+			}
+		});
+
+		it('should throw a NexiosError for 500 responses', async () => {
+			try {
+				await nexios.get('/error');
+			} catch (error) {
+				expect(error).toBeInstanceOf(NexiosError);
+				if (error instanceof NexiosError) {
+					expect(error.status).toBe(500);
+					expect(error.statusMsg).toBe('500 INTERNAL SERVER ERROR');
+					expect(error.message).toBe('500 Internal Server Error');
+				}
+			}
+		});
+	});
 });
-
-// describe('Error Handling', () => {
-// 	it('should throw NexiosError for non-200 responses', async () => {
-// 		// setup mock response
-// 		const errorResponse = { message: '404 NOT FOUND' };
-// 		fetchMock.mockResponseOnce(JSON.stringify(errorResponse), {
-// 			status: 404,
-// 			headers: { 'Content-Type': 'application/json' },
-// 		});
-
-// 		await expect(nexios.get('/nonexistent')).rejects.toThrow('404 NOT FOUND');
-// 	});
-
-// 	it('should include error data in thrown NexiosError', async () => {
-// 		// setup mock response
-// 		const errorResponse = {
-// 			message: 'Validation Error',
-// 			errors: ['Invalid input'],
-// 		};
-// 		fetchMock.mockResponseOnce(JSON.stringify(errorResponse), {
-// 			status: 400,
-// 			headers: { 'Content-Type': 'application/json' },
-// 		});
-
-// 		try {
-// 			await nexios.post('/users', {});
-// 		} catch (error) {
-// 			if (error instanceof NexiosError) {
-// 				expect(error.status).toBe(400);
-// 				expect(error.data).toEqual(errorResponse);
-// 			} else {
-// 				fail(error);
-// 			}
-// 		}
-// 	});
-// });
-// });

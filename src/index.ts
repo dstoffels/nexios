@@ -12,7 +12,8 @@ export const defaultConfig: NexiosConfig = {
 	baseURL: '',
 	bypassBaseURL: false,
 	timeout: 1000,
-	credentials: 'include',
+	// credentials: 'include',
+	withCredentials: true,
 	cache: 'force-cache',
 	headers: new Headers(),
 	responseType: 'json',
@@ -53,24 +54,41 @@ class Nexios {
 
 	async request<T = unknown>(config: NexiosConfig): Promise<NexiosResponse<T>> {
 		try {
-			const mergedConfig = this.mergeConfig(config);
-			const interceptedConfig = await this.runRequestInterceptors(mergedConfig);
-			interceptedConfig.signal = this.handleTimeout(interceptedConfig.timeout);
+			// FINALIZE CONFIG
+			var mergedConfig = this.mergeConfig(config);
+			var interceptedConfig = await this.runRequestInterceptors(mergedConfig);
 
+			// TIMEOUT
+			const { signal, timeoutId } = this.startTimeout(interceptedConfig.timeout as number);
+			interceptedConfig.signal = signal;
+
+			// BUILD REQUEST
 			const { url, init } = new NexiosRequest(interceptedConfig);
-			const rawResponse = await fetch(url, init);
 
+			// SEND REQUEST
+			const rawResponse = await fetch(url, init);
+			clearTimeout(timeoutId);
+
+			// BUILD RESPONSE
 			const response = new NexiosResponse<T>(rawResponse, interceptedConfig);
 			await response.resolveBody();
 
-			if (!response.ok) throw new NexiosError(response, this.transformErrorMsg);
+			// HANDLE RESPONSE
+			if (!response.ok) throw new NexiosError(this.transformErrorMsg(response), response);
 
+			// FINALIZE RESPONSE
 			return await this.runResponseInterceptors(response);
 		} catch (error) {
+			// INTERCEPT REQUEST ERROR
+			if (typeof error === 'string') throw new NexiosError(error);
+			// INTERCEPT RESPONSE ERROR
 			if (error instanceof NexiosError) {
-				const interceptedError = await this.runResponseInterceptors(error.response);
+				const interceptedError = await this.runResponseInterceptors(
+					error.response as NexiosResponse,
+				);
 				error.response = interceptedError;
 			}
+
 			throw error;
 		}
 	}
@@ -117,7 +135,7 @@ class Nexios {
 	/**
 	 * Called when a NexiosError is thrown due to a 400/500 response. Common patterns are checked to automatically assign the response's error details to error.message. Can be overridden directly or in the instance config to fit the error response pattern of the API this instance consumes.
 	 */
-	transformErrorMsg(response: NexiosResponse) {
+	transformErrorMsg(response: NexiosResponse): string {
 		const data = response.data as any;
 
 		if (typeof data === 'string') return data;
@@ -173,13 +191,17 @@ class Nexios {
 		};
 	}
 
-	private handleTimeout(timeout?: number): AbortSignal {
+	private startTimeout(timeout: number): { signal: AbortSignal; timeoutId: NodeJS.Timeout } {
 		const abortController = new AbortController();
-		if (timeout) {
-			const id = setTimeout(() => abortController.abort(), timeout);
-			id.unref(); // prevent leaks
-		}
-		return abortController.signal;
+		const timeoutId = setTimeout(
+			() =>
+				abortController.abort(
+					`Request timed out after server failed to respond after ${timeout}ms`,
+				),
+			timeout,
+		);
+		timeoutId.unref(); // prevent leaks
+		return { signal: abortController.signal, timeoutId };
 	}
 }
 

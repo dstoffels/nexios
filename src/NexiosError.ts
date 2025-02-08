@@ -1,17 +1,19 @@
 import NexiosResponse from './NexiosResponse';
 
 export default class NexiosError extends Error {
-	response: NexiosResponse;
-	status: number;
-	statusMsg: string;
-	data: any;
+	response?: NexiosResponse;
+	status?: number;
+	statusMsg?: string;
+	data?: any;
+	isResponseError: boolean;
 
-	constructor(response: NexiosResponse, transformErrorMsg: (response: NexiosResponse) => string) {
-		super();
+	constructor(message: string, response?: NexiosResponse) {
+		super(message);
 		this.response = response;
-		this.status = response.status;
-		this.statusMsg = `${this.status} ${NexiosResponse.statusCodes[this.status]}`;
-		this.data = response.data;
-		this.message = transformErrorMsg(response) || this.statusMsg;
+		this.isResponseError = Boolean(response);
+		this.status = response?.status;
+		this.statusMsg =
+			this.status?.toString() && `${this.status} ${NexiosResponse.statusCodes[this.status]}`;
+		this.data = response?.data;
 	}
 }

@@ -72,7 +72,7 @@ export default class NexiosResponse<T = unknown> {
 					this.data = null;
 			}
 		} catch (error) {
-			throw new NexiosError(this, () => (error as Error).message);
+			throw new NexiosError((error as Error).message, this);
 		}
 	}
 
