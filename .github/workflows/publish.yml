@@ -52,7 +52,13 @@ jobs:
           git push origin "v${{ steps.package-version.outputs.version }}"
       - name: Create release
         uses: softprops/action-gh-release@v2
-        
+        with:
+          tag_name: ${{ steps.package-version.outputs.version }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Publish to NPM
         run: npm publish --access public
         env:
