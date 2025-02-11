@@ -44,6 +44,7 @@ export default class NexiosRequest {
 		try {
 			if (bypassBaseURL && url) urlObj = new URL(url);
 			else if (baseURL) urlObj = new URL(baseURL + (url || ''));
+			else if (!baseURL && url) urlObj = new URL(url);
 			else throw new Error('No URL or baseURL provided.');
 
 			// params
