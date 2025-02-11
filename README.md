@@ -27,7 +27,7 @@ const nexios = new Nexios();
 export default nexios;
 ```
 
-#### Default Config
+### Default Config
 `NexiosConfig` is largely used as the default options for all requests made from this instance. Setting `baseURL` allows you to prefix every request's url with a web API's domain. 
 
 ```typescript
@@ -153,7 +153,7 @@ export default async function LoginPage() {
 Nexios' default `transformErrorMsg` method attempts to extract a detailed error message using common error response patterns directly to the error's message property. Since every web API responds with a different 400/500 data structure, you can override this to fit the API you're consuming with this instance, making for more streamlined error handling.
 
 ```typescript
-// the default parseError method
+// the default transofmrErrorMsg method
 transformErrorMsg = (response: NexiosResponse): string => {
 		const data = response.data as any;
 
@@ -164,7 +164,7 @@ transformErrorMsg = (response: NexiosResponse): string => {
 	}
 ```
 
-> The default `transformErrorMsg()` is automatically called on non-ok responses (400/500 status) and its return is assigned to a NexiosError message property.
+> The default `transformErrorMsg()` is automatically called on non-ok responses (400/500 status) and its return is assigned to a NexiosError's message property.
 
 ```typescript
 // nexios.ts
@@ -206,7 +206,7 @@ export async function fetchUserData(): {user: User | null, errorMsg: string} {
   return { user, errorMsg };
 }
 ```
-> The `fetchUserData` server action attempts to fetch the user's data or extract an error message. Both values are always returned from the action, but will be empty or null depending on the response from the web API.
+> The `fetchUserData` server action attempts to fetch the user's data or extract an error message from the web API. Both values are always returned from the action, but may be empty or null depending on the response from the web API.
 
 ```typescript
 // page.tsx
@@ -299,7 +299,7 @@ A Response DTO that resolves the response's body in to its data property.
 - **status**: The status code of the response (400, 500, 404...).
 - **statusMsg**: The long status message of the response (400 BAD REQUEST, 500 INTERNAL SERVER ERROR, 404 NOT FOUND...).
 - **data**: The deserialized body from the raw Response.
-- **message**: The detailed error message returned in the response, assigned with Nexios' `parseError`
+- **message**: The detailed error message returned in the response, assigned with Nexios' `transformErrorMsg`
 - **isResponseError**: Flags whether the error contains a response object.
 
 ### Interfaces

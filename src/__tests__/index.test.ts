@@ -20,9 +20,12 @@ describe('Nexios', () => {
 	});
 
 	describe('Initialization', () => {
-		it('should initialize with default config', () => {
+		it('should initialize and make request with default config', async () => {
 			const nexios = new Nexios();
 			expect(nexios.defaults).toEqual(defaultConfig);
+
+			const response = await nexios.get(`${baseURL}/users`);
+			expect(response.data).not.toBeNull();
 		});
 
 		it('should initialize with merged custom and default config', () => {
