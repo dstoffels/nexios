@@ -28,6 +28,7 @@
 	],
 	"author": "Dan Stoffels",
 	"license": "MIT",
+	"type": "module",
 	"devDependencies": {
 		"@types/jest": "^29.5.14",
 		"@types/node": "^20.14.10",
