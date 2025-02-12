@@ -14,27 +14,6 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: '20'
-
-      # - name: Get PR branch version
-      #   id: pr-version
-      #   run: echo "pr_version=$(node -p "require('./package.json').version")" >> $GITHUB_ENV
-
-      # - name: Get current version
-      #   id: current-version
-      #   run: |
-      #     git fetch origin main
-      #     git show origin/main:package.json > package-main.json
-      #     echo "current_version=$(node -p "require('./package-main.json').version")" >> $GITHUB_ENV
-      
-      # - name: Compare versions
-      #   run: |
-      #     if [ "$PR_VERSION" == "$CURRENT_VERSION" ]; then
-      #       echo "❌ ERROR: PR version matches current version, bump version before attempting PR."
-      #       exit 1
-      #     fi
-      #   env:
-      #     PR_VERSION: ${{ env.pr_version }}
-      #     CURRENT_VERSION: ${{ env.current_version }}
           
       - name: Install dependencies
         run: npm ci
