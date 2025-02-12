@@ -4,7 +4,7 @@ import NexiosError from './NexiosError';
 import NexiosRequest from './NexiosRequest';
 import NexiosResponse from './NexiosResponse';
 import { Params } from './types';
-import { Axios, AxiosHeaders, AxiosResponse } from 'axios';
+// import { Axios, AxiosHeaders, AxiosResponse } from 'axios';
 
 // With default Axios Config (unimplemented features commented out)
 export const defaultConfig: NexiosConfig = {
