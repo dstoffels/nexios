@@ -1,15 +1,16 @@
 {
 	"compilerOptions": {
-		"outDir": "./dist",
-		"rootDir": "./src",
 		"module": "ESNext",
 		"moduleResolution": "bundler",
-		"target": "ES6",
+		"target": "ES2022",
+		"outDir": "./dist",
+		"rootDir": "./src",
 		"strict": true,
 		"declaration": true,
 		"sourceMap": true,
 		"esModuleInterop": true,
-		"skipLibCheck": true
+		"allowSyntheticDefaultImports": true,
+		"allowArbitraryExtensions": true
 	},
 	"include": ["src/**/*"],
 	"exclude": ["node_modules", "**/__tests__/**", "**/*.test.ts", "**/*.spec.ts"]

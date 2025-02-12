@@ -3,8 +3,6 @@ import { NexiosConfig, NexiosHeaders } from './interfaces';
 import NexiosError from './NexiosError';
 import NexiosRequest from './NexiosRequest';
 import NexiosResponse from './NexiosResponse';
-import { Params } from './types';
-// import { Axios, AxiosHeaders, AxiosResponse } from 'axios';
 
 // With default Axios Config (unimplemented features commented out)
 export const defaultConfig: NexiosConfig = {
@@ -141,18 +139,6 @@ class Nexios {
 	setAuthHeader(token: string, isBearer: boolean = true) {
 		this.defaults.headers?.set('Authorization', isBearer ? `Bearer ${token}` : token);
 	}
-
-	/**
-	 * Called when a NexiosError is thrown due to a 400/500 response. Common patterns are checked to automatically assign the response's error details to error.message. Can be overridden directly or in the instance config to fit the error response pattern of the API this instance consumes.
-	 */
-	// transformErrorMsg<T>(response: NexiosResponse<T>): string {
-	// 	const data = response.data as any;
-
-	// 	if (typeof data === 'string') return data;
-	// 	else if (data?.message) return data.message;
-	// 	else if (data?.error) return data.error;
-	// 	else return JSON.stringify(data);
-	// }
 
 	private async runRequestInterceptors(config: NexiosConfig): Promise<NexiosConfig> {
 		let chainedConfig = config;
