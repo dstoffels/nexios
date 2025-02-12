@@ -1,6 +1,6 @@
 {
 	"name": "nexios",
-	"version": "1.0.1",
+	"version": "1.0.2",
 	"description": "An axios clone that wraps fetch for use with next.js.",
 	"main": "dist/index.js",
 	"scripts": {
