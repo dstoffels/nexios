@@ -1,5 +1,3 @@
-import { OutgoingHttpHeaders } from 'http2';
-
 export type RequestMethod =
 	| 'get'
 	| 'GET'
