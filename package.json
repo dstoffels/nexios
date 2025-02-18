@@ -6,6 +6,7 @@
 	"scripts": {
 		"build": "tsup",
 		"test": "jest",
+		"sandbox": "npm run build & node sandbox.js",
 		"dev": "jest --watch --detectOpenHandles",
 		"test:coverage": "jest --coverage --detectOpenHandles"
 	},

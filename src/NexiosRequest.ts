@@ -52,7 +52,10 @@ export default class NexiosRequest {
 				? paramsSerializer(params)
 				: this.serializeParams(params);
 
-			urlObj.search = serializedParams;
+			if (serializedParams) {
+				if (urlObj.search) urlObj.search += '&' + serializedParams;
+				else urlObj.search += '?' + serializedParams;
+			}
 
 			this.url = urlObj.toString();
 		} catch (error) {

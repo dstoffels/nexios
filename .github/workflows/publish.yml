@@ -36,14 +36,6 @@ jobs:
         id: package-version
         run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
 
-      # - name: Check if version exists
-      #   id: check-tag
-      #   run: |
-      #     if git rev-parse "v${{ steps.package-version.outputs.version }}" >/dev/null 2>&1; then
-      #       echo "Version ${{ steps.package-version.outputs.version }} already exists"
-      #       exit 1
-      #     fi
-
       - name: Create and push tag
         run: |
           if git rev-parse "v${{ steps.package-version.outputs.version }}" >/dev/null 2>&1; then
@@ -54,6 +46,7 @@ jobs:
             git tag -a "v${{ steps.package-version.outputs.version }}" -m "Release v${{ steps.package-version.outputs.version }}"
             git push origin "v${{ steps.package-version.outputs.version }}"
           fi
+          
       - name: Create release
         uses: softprops/action-gh-release@v2
         with:

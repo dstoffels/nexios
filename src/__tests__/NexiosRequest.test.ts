@@ -30,14 +30,23 @@ describe('NexiosRequest', () => {
 		await nexios.get(url);
 	});
 
-	it('should set request url to baseURL + url + params', async () => {
+	it('should set request url to baseURL + url + params w params in config', async () => {
 		const url = '/users';
 		const params = { id: '1', name: 'John' };
 		interceptRequest((request) => {
-			expect(request.url).toBe(`${baseURL}${url}?id=1&name=John`);
+			expect(request.url).toBe(`${baseURL + url}?id=1&name=John`);
 		});
 
 		await nexios.get(url, { params });
+	});
+
+	it('should set request url to baseURL + url + params w params in url', async () => {
+		const url = '/users?id=1&name=John';
+		interceptRequest((request) => {
+			expect(request.url).toBe(`${baseURL + url}`);
+		});
+
+		await nexios.get(url);
 	});
 
 	it('should set request url to url when bypassBaseURL is true', async () => {
