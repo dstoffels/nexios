@@ -1,11 +1,12 @@
 {
 	"name": "nexios",
-	"version": "1.0.4",
+	"version": "1.0.5",
 	"description": "An axios clone that wraps fetch for use with next.js.",
 	"main": "dist/index.js",
 	"scripts": {
 		"build": "tsup",
 		"test": "jest",
+		"sandbox": "npm run build & node sandbox.js",
 		"dev": "jest --watch --detectOpenHandles",
 		"test:coverage": "jest --coverage --detectOpenHandles"
 	},

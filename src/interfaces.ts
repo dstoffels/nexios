@@ -55,7 +55,7 @@ export interface NexiosConfig extends RequestInit {
 	// 		password: string;
 	// 	};
 	// };
-	signal?: AbortSignal;
+	signal?: AbortSignal | null;
 
 	/** Tells Nexios to automatically decompress the response body. */
 	// decompress?: boolean;

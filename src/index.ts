@@ -59,9 +59,9 @@ class Nexios {
 	}
 
 	async request<T = unknown>(config: NexiosConfig): Promise<NexiosResponse<T>> {
+		var mergedConfig = this.mergeConfig(config);
 		try {
 			// FINALIZE CONFIG
-			var mergedConfig = this.mergeConfig(config);
 			var interceptedConfig = await this.runRequestInterceptors(mergedConfig);
 
 			// TIMEOUT
@@ -92,6 +92,14 @@ class Nexios {
 		} catch (error) {
 			// INTERCEPT REQUEST ERROR
 			if (typeof error === 'string') throw new NexiosError(error);
+
+			// INTERCEPT ABORT ERROR
+			if (error instanceof DOMException && error.name === 'AbortError') {
+				const res = new NexiosResponse({ status: 408, ok: false } as Response, mergedConfig);
+				const e = new NexiosError(`Request timed out after ${mergedConfig.timeout}ms`, res);
+				throw e;
+			}
+
 			// INTERCEPT RESPONSE ERROR
 			if (error instanceof NexiosError) {
 				const interceptedError = await this.runResponseInterceptors(
@@ -190,16 +198,11 @@ class Nexios {
 
 	private startTimeout(timeout: number): { signal: AbortSignal; timeoutId: NodeJS.Timeout } {
 		const abortController = new AbortController();
-		const timeoutId = setTimeout(
-			() =>
-				abortController.abort(
-					`Request timed out after server failed to respond after ${timeout}ms`,
-				),
-			timeout,
-		);
-		timeoutId.unref(); // prevent leaks
+		const timeoutId = setTimeout(() => abortController.abort(), timeout);
 		return { signal: abortController.signal, timeoutId };
 	}
 }
 
 export default Nexios;
+
+export { NexiosError, NexiosRequest, NexiosResponse, NexiosHeaders, NexiosConfig };

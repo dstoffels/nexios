@@ -169,7 +169,7 @@ describe('Nexios', () => {
 	describe('Error Handling', () => {
 		it('should timeout after 2 seconds', async () => {
 			await expect(nexios.get('/timeout', { timeout: 2000 })).rejects.toThrow(
-				'Request timed out after server failed to respond after 2000ms',
+				'Request timed out after 2000ms',
 			);
 		});
 
