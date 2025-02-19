@@ -188,7 +188,7 @@ class Nexios {
 			if (config.headers) {
 				headers = { ...headers, ...config.headers };
 			}
-			output = { ...output, ...config };
+			output = { ...output, ...config, headers };
 		}
 		return output as NexiosConfig;
 	}
