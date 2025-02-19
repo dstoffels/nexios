@@ -1,4 +1,4 @@
-import Nexios from '..';
+import { Nexios } from '..';
 import { baseURL, server } from './setup';
 
 describe('NexiosResponse', () => {

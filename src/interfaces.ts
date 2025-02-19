@@ -1,7 +1,7 @@
-import { RequestMethod, Params, ResponseEncoding, ContentType, ResponseType } from './types';
+import { RequestMethod, Params, ResponseType, NexiosHeaders } from './types';
 import NexiosResponse from './NexiosResponse';
 
-export interface NexiosConfig extends RequestInit {
+export interface NexiosOptions extends RequestInit {
 	// Nexios Config
 	/** Next.js options
 	 * @param revalidate
@@ -59,16 +59,11 @@ export interface NexiosConfig extends RequestInit {
 
 	/** Tells Nexios to automatically decompress the response body. */
 	// decompress?: boolean;
+	[key: string]: any;
 }
 
-export interface NexiosHeaders extends Headers {
-	Accept?: ContentType;
-	'Content-Length'?: ContentType;
-	'User-Agent'?: string;
-	'Content-Encoding'?: ResponseEncoding;
-	'Content-Type'?: ContentType;
-	Authorization?: string;
-	Cookie?: string | string[];
+export interface NexiosConfig extends NexiosOptions {
+	headers: NexiosHeaders;
 }
 
 export interface Interceptor<T> {

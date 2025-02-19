@@ -1,3 +1,14 @@
+export type NexiosHeaders = Record<string, string> & {
+	accept?: ContentType;
+	'content-length'?: ContentType;
+	'user-agent'?: string;
+	'content-encoding'?: ResponseEncoding;
+	'content-type'?: ContentType;
+	authorization?: string;
+	cookie?: string | string[];
+	'set-Cookie'?: string | string[];
+};
+
 export type RequestMethod =
 	| 'get'
 	| 'GET'

@@ -1,4 +1,4 @@
-import Nexios, { defaultConfig } from '../index';
+import { Nexios, NexiosHeaders, defaultConfig } from '../index';
 import {
 	baseURL,
 	clearEndpointListeners,
@@ -7,7 +7,7 @@ import {
 	User,
 	users,
 } from './setup';
-import { NexiosConfig, NexiosHeaders } from '../interfaces';
+import { NexiosConfig } from '../interfaces';
 import NexiosError from '../NexiosError';
 
 describe('Nexios', () => {
@@ -29,19 +29,19 @@ describe('Nexios', () => {
 		});
 
 		it('should initialize with merged custom and default config', () => {
-			const headers = new Headers({ 'Content-Type': 'text/plain' });
+			const headers: NexiosHeaders = { 'Content-Type': 'text/plain' };
 			nexios = new Nexios({ baseURL, cache: 'no-cache', headers });
 			expect(nexios.baseURL).toBe(baseURL);
 			expect(nexios.defaults.cache).toBe('no-cache');
 			expect(nexios.defaults.headers).toEqual(headers);
 			expect(nexios.defaults.withCredentials).toBe(true);
-			expect(nexios.defaults.headers?.get('Content-Type')).toBe('text/plain');
+			expect(nexios.defaults.headers['Content-Type']).toBe('text/plain');
 		});
 
 		it('should set the Authorization header', async () => {
 			const token = 'NEW_TOKEN';
 			nexios.setAuthHeader(token);
-			expect(nexios.defaults.headers?.get('Authorization')).toBe(`Bearer ${token}`);
+			expect(nexios.defaults.headers.authorization).toBe(`Bearer ${token}`);
 		});
 	});
 

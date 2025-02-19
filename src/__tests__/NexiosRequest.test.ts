@@ -1,6 +1,4 @@
-import { url } from 'inspector';
-import Nexios from '..';
-import NexiosRequest from '../NexiosRequest';
+import { Nexios } from '..';
 import { baseURL, clearEndpointListeners, interceptRequest } from './setup';
 
 describe('NexiosRequest', () => {
