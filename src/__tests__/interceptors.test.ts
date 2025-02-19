@@ -1,4 +1,4 @@
-import Nexios from '..';
+import { Nexios } from '..';
 import { NexiosConfig } from '../interfaces';
 import NexiosResponse from '../NexiosResponse';
 import { baseURL, clearEndpointListeners, interceptRequest } from './setup';
@@ -18,7 +18,7 @@ describe('Interceptors', () => {
 
 	it('should intercept requests', async () => {
 		function addToken(config: NexiosConfig) {
-			config.headers?.set('Authorization', 'Bearer ' + token);
+			config.headers.Authorization = 'Bearer ' + token;
 			return config;
 		}
 

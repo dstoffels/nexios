@@ -1,15 +1,17 @@
-import { NexiosConfig } from './interfaces';
+import NexiosCookies from './cookies';
+import { NexiosOptions } from './interfaces';
 import NexiosError from './NexiosError';
-import { ContentType } from './types';
+import { NexiosHeaders } from './types';
 
-export default class NexiosResponse<T = unknown> {
+export default class NexiosResponse<T = any> {
 	data: T | null;
-	config: NexiosConfig;
+	config: NexiosOptions;
 	raw: Response;
 
 	status: number;
 	statusText: string;
-	headers: Headers;
+	headers: NexiosHeaders;
+	cookies: NexiosCookies;
 	ok: boolean;
 	redirected: boolean;
 	type: ResponseType;
@@ -17,14 +19,16 @@ export default class NexiosResponse<T = unknown> {
 	body: ReadableStream<Uint8Array> | null;
 	bodyUsed: boolean;
 
-	constructor(response: Response, config: NexiosConfig) {
+	constructor(response: Response, config: NexiosOptions) {
 		this.data = null;
 		this.config = config;
 		this.raw = response;
 
 		this.status = response.status;
 		this.statusText = response.statusText;
-		this.headers = new Headers(response.headers);
+		this.headers = {};
+		this.resolveHeaders(response.headers);
+		this.cookies = new NexiosCookies(response.headers);
 		this.ok = response.ok;
 		this.redirected = response.redirected;
 		this.type = response.type;
@@ -33,8 +37,12 @@ export default class NexiosResponse<T = unknown> {
 		this.bodyUsed = response.bodyUsed;
 	}
 
+	private resolveHeaders(headers: Headers): void {
+		headers?.forEach((v, k) => (this.headers[k] = v));
+	}
+
 	async resolveBody() {
-		const contentType = this.headers.get('Content-Type') as ContentType;
+		const contentType = this.headers['content-type'];
 
 		if (!contentType) return;
 

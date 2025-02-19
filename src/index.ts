@@ -1,19 +1,21 @@
 import InterceptorManager from './interceptors';
-import { NexiosConfig, NexiosHeaders } from './interfaces';
+import { NexiosConfig, NexiosOptions } from './interfaces';
+import { NexiosHeaders } from './types';
 import NexiosError from './NexiosError';
 import NexiosRequest from './NexiosRequest';
 import NexiosResponse from './NexiosResponse';
+import NexiosCookies from './cookies';
 
 // With default Axios Config (unimplemented features commented out)
-export const defaultConfig: NexiosConfig = {
+export const defaultConfig: NexiosOptions = {
 	method: 'GET',
 	baseURL: '',
 	bypassBaseURL: false,
 	timeout: 1000,
-	// credentials: 'include',
+	credentials: 'include',
 	withCredentials: true,
 	cache: 'force-cache',
-	headers: new Headers({ 'Content-Type': 'application/json' } as NexiosHeaders),
+	headers: { 'content-type': 'application/json', accept: 'application/json' } as NexiosHeaders,
 	responseType: 'json',
 	// responseEncoding: 'utf8',
 	xsrfCookieName: 'XSRF-TOKEN',
@@ -38,6 +40,7 @@ export const defaultConfig: NexiosConfig = {
  */
 class Nexios {
 	defaults: NexiosConfig;
+	cookies: NexiosCookies;
 
 	interceptors: {
 		request: InterceptorManager<NexiosConfig>;
@@ -48,17 +51,17 @@ class Nexios {
 		return this.defaults.baseURL;
 	}
 
-	constructor(config?: NexiosConfig) {
-		const mergedDefaults = { ...defaultConfig, ...config };
-		this.defaults = mergedDefaults;
-		// this.transformErrorMsg = config?.transformErrorMsg || this.transformErrorMsg;
+	constructor(config?: NexiosOptions) {
+		this.defaults = defaultConfig as NexiosConfig;
+		if (config) this.defaults = this.mergeConfig(config);
+		this.cookies = new NexiosCookies(this.defaults.headers);
 		this.interceptors = {
 			request: new InterceptorManager<NexiosConfig>(),
 			response: new InterceptorManager<NexiosResponse>(),
 		};
 	}
 
-	async request<T = unknown>(config: NexiosConfig): Promise<NexiosResponse<T>> {
+	async request<T = any>(config: NexiosOptions): Promise<NexiosResponse<T>> {
 		var mergedConfig = this.mergeConfig(config);
 		try {
 			// FINALIZE CONFIG
@@ -112,43 +115,33 @@ class Nexios {
 		}
 	}
 
-	async get<T = unknown>(url: string, config?: NexiosConfig): Promise<NexiosResponse<T>> {
+	async get<T = any>(url: string, config?: NexiosOptions): Promise<NexiosResponse<T>> {
 		return this.request<T>({ ...config, url, method: 'GET' });
 	}
 
-	async post<T = unknown>(
-		url: string,
-		data: any,
-		config?: NexiosConfig,
-	): Promise<NexiosResponse<T>> {
+	async post<T = any>(url: string, data: any, config?: NexiosOptions): Promise<NexiosResponse<T>> {
 		return this.request<T>({ ...config, url, method: 'POST', data });
 	}
 
-	async put<T = unknown>(
-		url: string,
-		data: any,
-		config?: NexiosConfig,
-	): Promise<NexiosResponse<T>> {
+	async put<T = any>(url: string, data: any, config?: NexiosOptions): Promise<NexiosResponse<T>> {
 		return this.request<T>({ ...config, url, method: 'PUT', data });
 	}
 
-	async patch<T = unknown>(
-		url: string,
-		data: any,
-		config?: NexiosConfig,
-	): Promise<NexiosResponse<T>> {
+	async patch<T = any>(url: string, data: any, config?: NexiosOptions): Promise<NexiosResponse<T>> {
 		return this.request<T>({ ...config, url, method: 'PATCH', data });
 	}
 
-	async delete<T = unknown>(url: string, config?: NexiosConfig): Promise<NexiosResponse<T>> {
+	async delete<T = any>(url: string, config?: NexiosOptions): Promise<NexiosResponse<T>> {
 		return this.request<T>({ ...config, url, method: 'DELETE' });
 	}
 
 	setAuthHeader(token: string, isBearer: boolean = true) {
-		this.defaults.headers?.set('Authorization', isBearer ? `Bearer ${token}` : token);
+		// force object literal if defaults/headers are undefined.
+		this.defaults.headers = this.defaults?.headers || {};
+		this.defaults.headers['authorization'] = isBearer ? `Bearer ${token}` : token;
 	}
 
-	private async runRequestInterceptors(config: NexiosConfig): Promise<NexiosConfig> {
+	private async runRequestInterceptors(config: NexiosConfig): Promise<NexiosOptions> {
 		let chainedConfig = config;
 
 		this.interceptors.request.foreach(async ({ onFulfilled, onRejected }) => {
@@ -185,15 +178,16 @@ class Nexios {
 		return chainedResponse;
 	}
 
-	private mergeConfig(config?: NexiosConfig): NexiosConfig {
-		return {
-			...this.defaults,
-			...config,
-			headers: new Headers({
-				...this.defaults.headers,
-				...config?.headers,
-			} as NexiosHeaders),
-		};
+	private mergeConfig(config?: NexiosOptions): NexiosConfig {
+		let output = { ...this.defaults };
+		if (config) {
+			let headers = { ...this.defaults.headers };
+			if (config.headers) {
+				headers = { ...headers, ...config.headers };
+			}
+			output = { ...output, ...config };
+		}
+		return output as NexiosConfig;
 	}
 
 	private startTimeout(timeout: number): { signal: AbortSignal; timeoutId: NodeJS.Timeout } {
@@ -203,6 +197,16 @@ class Nexios {
 	}
 }
 
-export default Nexios;
+const nexios = new Nexios();
 
-export { NexiosError, NexiosRequest, NexiosResponse, NexiosHeaders, NexiosConfig };
+export default nexios;
+
+export {
+	Nexios,
+	NexiosError,
+	NexiosRequest,
+	NexiosResponse,
+	NexiosHeaders,
+	NexiosConfig,
+	NexiosOptions,
+};

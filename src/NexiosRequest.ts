@@ -1,4 +1,5 @@
-import { NexiosConfig } from './interfaces';
+import NexiosCookies from './cookies';
+import { NexiosConfig, NexiosOptions } from './interfaces';
 import NexiosError from './NexiosError';
 import { Params } from './types';
 
@@ -6,18 +7,17 @@ import { Params } from './types';
 export default class NexiosRequest {
 	url: string;
 	config: NexiosConfig;
+	cookies: NexiosCookies;
 
 	get init() {
 		return this.config;
 	}
 
-	constructor(config: NexiosConfig) {
+	constructor(config: NexiosOptions) {
 		this.url = '';
-		this.config = config;
-
-		this.config.headers = new Headers(config.headers);
-
 		if (config.data) config.body = JSON.stringify(config.data);
+		this.config = { ...config, headers: config.headers || {} };
+		this.cookies = new NexiosCookies(config.headers);
 
 		this.setXSRFHeader();
 		this.setBasicAuth();
@@ -33,7 +33,7 @@ export default class NexiosRequest {
 		if (typeof document !== 'undefined' && xsrfCookieName && xsrfHeaderName) {
 			const cookieParts = `; ${document.cookie}`.split(`; ${xsrfCookieName}=`);
 			const token = cookieParts.pop()?.split(';').shift();
-			token && this.config.headers?.set(xsrfHeaderName, token);
+			if (token) this.config.headers[xsrfHeaderName] = token;
 		}
 	}
 
@@ -69,15 +69,13 @@ export default class NexiosRequest {
 
 		if (auth) {
 			const { username, password } = auth;
-			this.config.headers?.set(
-				'Authorization',
-				'Basic ' + Buffer.from(`${username}:${password}`).toString('base64'),
-			);
+			this.config.headers.authorization =
+				'Basic ' + Buffer.from(`${username}:${password}`).toString('base64');
 		}
 	}
 
 	private setCredentials() {
 		if (this.config.withCredentials) this.config.credentials = 'include';
-		else if (this.config.credentials === undefined) this.config.credentials = 'same-origin';
+		else this.config.credentials = 'same-origin';
 	}
 }
