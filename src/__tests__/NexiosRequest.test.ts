@@ -1,4 +1,4 @@
-import { Nexios } from '..';
+import { Nexios, NexiosHeaders } from '..';
 import { baseURL, clearEndpointListeners, interceptRequest } from './setup';
 
 describe('NexiosRequest', () => {
@@ -11,82 +11,104 @@ describe('NexiosRequest', () => {
 		clearEndpointListeners();
 	});
 
-	it('should set request url to baseURL', async () => {
-		interceptRequest((request) => {
-			expect(request.url).toBe(baseURL + '/');
+	describe('URL', () => {
+		it('should set request url to baseURL', async () => {
+			interceptRequest((request) => {
+				expect(request.url).toBe(baseURL + '/');
+			});
+
+			await nexios.get('');
 		});
 
-		await nexios.get('');
+		it('shoud set request url to baseURL + url', async () => {
+			const url = '/users';
+			interceptRequest((request) => {
+				expect(request.url).toBe(baseURL + url);
+			});
+
+			await nexios.get(url);
+		});
+
+		it('should set request url to baseURL + url + params w params in config', async () => {
+			const url = '/users';
+			const params = { id: '1', name: 'John' };
+			interceptRequest((request) => {
+				expect(request.url).toBe(`${baseURL + url}?id=1&name=John`);
+			});
+
+			await nexios.get(url, { params });
+		});
+
+		it('should set request url to baseURL + url + params w params in url', async () => {
+			const url = '/users?id=1&name=John';
+			interceptRequest((request) => {
+				expect(request.url).toBe(`${baseURL + url}`);
+			});
+
+			await nexios.get(url);
+		});
+
+		it('should set request url to url when bypassBaseURL is true', async () => {
+			const url = 'https://otherapi.com/';
+			interceptRequest((request) => {
+				expect(request.url).toBe(url);
+			});
+
+			await nexios.get(url, { bypassBaseURL: true });
+		});
 	});
 
-	it('shoud set request url to baseURL + url', async () => {
-		const url = '/users';
-		interceptRequest((request) => {
-			expect(request.url).toBe(baseURL + url);
+	describe('withCredentials', () => {
+		it('should set credentials to "include" when withCredentials is true', async () => {
+			const config = { baseURL, withCredentials: true };
+
+			interceptRequest((request) => {
+				expect(request.credentials).toBe('include');
+			});
+
+			await nexios.get('/users', config);
 		});
 
-		await nexios.get(url);
+		it('should set credentials to "same-origin" when withCredentials is false', async () => {
+			const config = { withCredentials: false };
+
+			interceptRequest((request) => {
+				expect(request.credentials).toBe('same-origin');
+			});
+
+			await nexios.get('/users', config);
+		});
 	});
 
-	it('should set request url to baseURL + url + params w params in config', async () => {
-		const url = '/users';
-		const params = { id: '1', name: 'John' };
-		interceptRequest((request) => {
-			expect(request.url).toBe(`${baseURL + url}?id=1&name=John`);
+	describe('Headers', () => {
+		it('should set basic auth header', async () => {
+			const auth = { username: 'user', password: 'pass' };
+			const config = { baseURL, auth };
+
+			interceptRequest((request) => {
+				expect(request.headers?.get('Authorization')).toBe(
+					'Basic ' + Buffer.from(`${auth.username}:${auth.password}`).toString('base64'),
+				);
+			});
+
+			await nexios.get('/users', config);
 		});
 
-		await nexios.get(url, { params });
-	});
+		it('should transfer all defaults and config headers to fetch Request headers', async () => {
+			const headers: NexiosHeaders = {
+				accept: 'application/pdf',
+				authorization: 'abcdef',
+			};
 
-	it('should set request url to baseURL + url + params w params in url', async () => {
-		const url = '/users?id=1&name=John';
-		interceptRequest((request) => {
-			expect(request.url).toBe(`${baseURL + url}`);
+			interceptRequest((request) => {
+				const reqHeaders: NexiosHeaders = {};
+				request.headers.forEach((v, k) => (reqHeaders[k] = v));
+
+				expect(reqHeaders).toEqual({ ...nexios.defaults.headers, ...headers });
+			});
+
+			await nexios.get('/users', { headers });
 		});
-
-		await nexios.get(url);
-	});
-
-	it('should set request url to url when bypassBaseURL is true', async () => {
-		const url = 'https://otherapi.com/';
-		interceptRequest((request) => {
-			expect(request.url).toBe(url);
-		});
-
-		await nexios.get(url, { bypassBaseURL: true });
-	});
-
-	it('should set credentials to "include" when withCredentials is true', async () => {
-		const config = { baseURL, withCredentials: true };
-
-		interceptRequest((request) => {
-			expect(request.credentials).toBe('include');
-		});
-
-		await nexios.get('/users', config);
-	});
-
-	it('should set credentials to "same-origin" when withCredentials is false', async () => {
-		const config = { withCredentials: false };
-
-		interceptRequest((request) => {
-			expect(request.credentials).toBe('same-origin');
-		});
-
-		await nexios.get('/users', config);
-	});
-
-	it('should set basic auth header', async () => {
-		const auth = { username: 'user', password: 'pass' };
-		const config = { baseURL, auth };
-
-		interceptRequest((request) => {
-			expect(request.headers?.get('Authorization')).toBe(
-				'Basic ' + Buffer.from(`${auth.username}:${auth.password}`).toString('base64'),
-			);
-		});
-
-		await nexios.get('/users', config);
 	});
 
 	// ERROR HANDLING

@@ -41,7 +41,7 @@ export type ResponseContentType =
 	| 'stream'
 	| 'formdata';
 
-export type NexiosHeaderValue = string | string[] | number | boolean | null | undefined;
+type NexiosHeaderValue = string | string[] | number | boolean | null | undefined;
 
 export type ContentType =
 	| 'text/html'

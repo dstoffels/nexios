@@ -99,27 +99,36 @@ export const server = setupServer(
 		}
 	}),
 
-	http.get(`${baseURL}/response-test/:type`, ({ request, params }) => {
+	http.get(`${baseURL}/response-test`, ({ request, params }) => {
+		// const { type } = params;
+		// if (type) {
+		// 	if (type === 'blob')
+		// 		return new HttpResponse(new Blob(['%PDF-1.4...'], { type: 'application/pdf' }), {
+		// 			headers: { 'Content-Type': 'application/pdf' },
+		// 		});
+		// 	else return HttpResponse.json('Invalid type param', { status: 400 });
+		// }
+
 		try {
-			const { type } = params;
-			switch (type) {
-				case 'json':
+			const accept = request.headers.get('accept');
+			switch (accept) {
+				case 'application/json':
 					return HttpResponse.json({ message: 'Hello, World!' });
-				case 'text':
+				case 'text/plain':
 					return HttpResponse.text('Hello, World!');
-				case 'html':
+				case 'text/html':
 					return HttpResponse.html('<h1>Hello, World!</h1>');
-				case 'xml':
+				case 'text/xml':
 					return HttpResponse.xml('<message>Hello, World!</message>');
-				case 'formdata':
+				case 'multipart/form-data':
 					const formData = new FormData();
 					formData.append('key', 'value');
 					return HttpResponse.formData(formData);
-				case 'arraybuffer':
+				case 'application/pdf':
 					return HttpResponse.arrayBuffer(new ArrayBuffer(8));
-				case 'blob':
-					return new HttpResponse(new Blob(['%PDF-1.4...'], { type: 'application/pdf' }), {
-						headers: { 'Content-Type': 'application/pdf' },
+				case 'image/jpeg':
+					return new HttpResponse(new Blob(['%PDF-1.4...']), {
+						headers: { 'Content-Type': 'image/jpeg' },
 					});
 			}
 		} catch (error) {

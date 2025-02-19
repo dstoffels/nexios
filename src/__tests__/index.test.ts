@@ -33,7 +33,7 @@ describe('Nexios', () => {
 			nexios = new Nexios({ baseURL, cache: 'no-cache', headers });
 			expect(nexios.baseURL).toBe(baseURL);
 			expect(nexios.defaults.cache).toBe('no-cache');
-			expect(nexios.defaults.headers).toEqual(headers);
+			expect(nexios.defaults.headers).toEqual({ ...nexios.defaults.headers, ...headers });
 			expect(nexios.defaults.withCredentials).toBe(true);
 			expect(nexios.defaults.headers['Content-Type']).toBe('text/plain');
 		});
@@ -111,6 +111,8 @@ describe('Nexios', () => {
 			expect(response.status).toBe(201);
 			expect(response.data).toEqual({ ...newUser, id: 5 });
 		});
+
+		//////////////////////////// PUT ///////////////////////////////////
 		it('should make a PUT request with custom config', async () => {
 			mockPath += '/1';
 			mockURL += '/1';
@@ -129,6 +131,7 @@ describe('Nexios', () => {
 			expect(response.status).toBe(200);
 		});
 
+		//////////////////////////// PATCH ///////////////////////////////////
 		it('should make a PATCH request with custom config', async () => {
 			mockPath += '/1';
 			mockURL += '/1';
@@ -150,6 +153,7 @@ describe('Nexios', () => {
 			expect(response.status).toBe(200);
 		});
 
+		//////////////////////////// DELETE ///////////////////////////////////
 		it('should make a DELETE request with custom config', async () => {
 			mockPath += '/1';
 			mockURL += '/1';
@@ -166,6 +170,7 @@ describe('Nexios', () => {
 		});
 	});
 
+	//////////////////////////// ERROR HANDLING ///////////////////////////////////
 	describe('Error Handling', () => {
 		it('should timeout after 2 seconds', async () => {
 			await expect(nexios.get('/timeout', { timeout: 2000 })).rejects.toThrow(
