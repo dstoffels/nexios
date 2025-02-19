@@ -1,7 +1,7 @@
 import NexiosCookies from './cookies';
 import { NexiosOptions } from './interfaces';
 import NexiosError from './NexiosError';
-import { NexiosHeaders } from './types';
+import { ContentType, NexiosHeaders, ResponseContentType } from './types';
 
 export default class NexiosResponse<T = any> {
 	data: T | null;
@@ -42,42 +42,73 @@ export default class NexiosResponse<T = any> {
 	}
 
 	async resolveBody() {
-		const contentType = this.headers['content-type'];
+		if (this.status === 204) return;
 
-		if (!contentType) return;
+		const responseTypeMap: Record<ResponseContentType, ContentType[]> = {
+			json: ['application/json'],
+			text: [
+				'text/html',
+				'text/plain',
+				'application/xml',
+				'text/xml',
+				'application/x-www-form-urlencoded',
+			],
+			formdata: ['multipart/form-data'],
+			blob: [
+				'application/pdf',
+				'image/jpeg',
+				'image/png',
+				'image/webp',
+				'audio/mpeg',
+				'audio/ogg',
+				'video/mp4',
+				'video/webm',
+			],
+			arraybuffer: ['application/pdf', 'application/octet-stream'],
+			document: [],
+			stream: ['application/octet-stream'],
+		};
 
 		try {
 			const response = this.raw.clone();
+			const responseType = this.config.responseType as ResponseContentType;
 
-			switch (true) {
-				case contentType.startsWith('application/json'):
+			const contentType = this.headers['content-type']?.toLowerCase();
+
+			const normalizedResponseType: ResponseContentType =
+				responseType === 'document'
+					? 'text'
+					: responseType === 'stream'
+					? 'arraybuffer'
+					: responseType;
+
+			const validContentTypes = responseTypeMap[normalizedResponseType] || [];
+
+			let resolveType: ResponseContentType = 'text';
+
+			if (validContentTypes.some((ct) => contentType?.startsWith(ct)))
+				resolveType = normalizedResponseType;
+			else {
+				resolveType = Object.entries(responseTypeMap).find(([, types]) =>
+					types.some((t) => contentType?.startsWith(t)),
+				)?.[0] as ResponseContentType;
+			}
+			switch (resolveType) {
+				case 'json':
 					this.data = (await response.json()) as T;
 					break;
-				case contentType.startsWith('application/x-www-form-urlencoded'):
-				case contentType.startsWith('text/xml'):
-				case contentType.startsWith('application/xml'):
-				case contentType.startsWith('text/html'):
-				case contentType.startsWith('text/plain'):
-					this.data = (await response.text()) as T;
-					break;
-				case contentType.startsWith('multipart/form-data'):
-					this.data = (await response.formData()) as T;
-					break;
-				case contentType.startsWith('application/octet-stream'):
+				case 'arraybuffer':
 					this.data = (await response.arrayBuffer()) as T;
 					break;
-				case contentType.startsWith('application/pdf'):
-				case contentType.startsWith('image/jpeg'):
-				case contentType.startsWith('image/png'):
-				case contentType.startsWith('image/webp'):
-				case contentType.startsWith('audio/mpeg'):
-				case contentType.startsWith('audio/ogg'):
-				case contentType.startsWith('video/mp4'):
-				case contentType.startsWith('video/webm'):
+				case 'formdata':
+					this.data = (await response.formData()) as T;
+					break;
+				case 'blob':
 					this.data = (await response.blob()) as T;
 					break;
+				case 'text':
 				default:
-					this.data = null;
+					this.data = (await response.text()) as T;
 			}
 		} catch (error) {
 			throw new NexiosError((error as Error).message, this);

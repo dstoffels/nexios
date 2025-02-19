@@ -15,7 +15,10 @@ export const defaultConfig: NexiosOptions = {
 	credentials: 'include',
 	withCredentials: true,
 	cache: 'force-cache',
-	headers: { 'content-type': 'application/json', accept: 'application/json' } as NexiosHeaders,
+	headers: {
+		'content-type': 'application/json',
+		accept: 'application/json',
+	},
 	responseType: 'json',
 	// responseEncoding: 'utf8',
 	xsrfCookieName: 'XSRF-TOKEN',

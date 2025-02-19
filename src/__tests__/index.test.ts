@@ -153,13 +153,13 @@ describe('Nexios', () => {
 		it('should make a DELETE request with custom config', async () => {
 			mockPath += '/1';
 			mockURL += '/1';
-			const response = await nexios.delete(mockPath, customConfig);
 
 			interceptRequest(async (request) => {
 				expect(request.url).toBe(mockURL);
 				expect(request.method).toBe('DELETE');
 				expect(request.headers.get('Authorization')).toBe('Bearer TOKEN');
 			});
+			const response = await nexios.delete(mockPath, customConfig);
 
 			expect(response.status).toBe(204);
 			expect(response.data).toBe(null);

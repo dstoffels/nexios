@@ -1,4 +1,4 @@
-import { RequestMethod, Params, ResponseType, NexiosHeaders } from './types';
+import { RequestMethod, Params, ResponseContentType, NexiosHeaders } from './types';
 import NexiosResponse from './NexiosResponse';
 
 export interface NexiosOptions extends RequestInit {
@@ -33,7 +33,7 @@ export interface NexiosOptions extends RequestInit {
 		username: string;
 		password: string;
 	};
-	responseType?: ResponseType;
+	responseType?: ResponseContentType;
 	// responseEncoding?: ResponseEncoding;
 	xsrfCookieName?: string;
 	xsrfHeaderName?: string;

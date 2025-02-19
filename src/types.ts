@@ -32,7 +32,7 @@ export type RequestMethod =
 	| 'UNLINK'
 	| (string & {});
 
-export type ResponseType =
+export type ResponseContentType =
 	| 'arraybuffer'
 	| 'blob'
 	| 'document'
@@ -46,6 +46,7 @@ export type NexiosHeaderValue = string | string[] | number | boolean | null | un
 export type ContentType =
 	| 'text/html'
 	| 'text/plain'
+	| 'text/xml'
 	| 'multipart/form-data'
 	| 'application/json'
 	| 'application/x-www-form-urlencoded'
