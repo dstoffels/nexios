@@ -4,7 +4,7 @@ import NexiosError from './NexiosError';
 import { ContentType, NexiosHeaders, ResponseContentType } from './types';
 
 export default class NexiosResponse<T = any> {
-	data: T | null;
+	data: T;
 	config: NexiosOptions;
 	raw: Response;
 
@@ -20,7 +20,7 @@ export default class NexiosResponse<T = any> {
 	bodyUsed: boolean;
 
 	constructor(response: Response, config: NexiosOptions) {
-		this.data = null;
+		this.data = null as T;
 		this.config = config;
 		this.raw = response;
 
